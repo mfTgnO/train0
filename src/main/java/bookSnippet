@@ -1,0 +1,34 @@
+In general, it helps to think that groupingBy works in terms of “buckets.” The first groupingBy
+creates a bucket for each key. You then collect the elements in each bucket with the downstream
+collector and so on to achieve n-level groupings!
+6.3.2. Collecting data in subgroups
+In the previous section, you saw that it’s possible to pass a second groupingBy collector to the
+outer one to achieve a multilevel grouping. But more generally, the second collector passed to
+the first groupingBy can be any type of collector, not just another groupingBy. For instance, it’s
+possible to count the number of Dishes in the menu for each type, by passing the counting
+collector as a second argument to the groupingBy collector:176
+Map<Dish.Type, Long> typesCount = menu.stream().collect(
+groupingBy(Dish::getType, counting()));
+The result is the following Map:
+{MEAT=3, FISH=2, OTHER=4}
+Also note that the regular one-argument groupingBy(f), where f is the classification function, is
+in reality just shorthand for groupingBy(f, toList()).
+To give another example, you could rework the collector you already used to find the
+highest-calorie dish in the menu to achieve a similar result, but now classified by the type of
+dish:
+Map<Dish.Type, Optional<Dish>> mostCaloricByType =
+menu.stream()
+.collect(groupingBy(Dish::getType,
+maxBy(comparingInt(Dish::getCalories))));
+The result of this grouping is then clearly a Map, having as keys the available types of Dishes and
+as values the Optional<Dish>, wrapping the corresponding highest-calorie Dish for a given type:
+{FISH=Optional[salmon], OTHER=Optional[pizza], MEAT=Optional[pork]}
+Note
+The values in this Map are Optionals because this is the resulting type of the collector generated
+by the maxBy factory method, but in reality if there’s no Dish in the menu for a given type, that
+type won’t have an Optional.empty() as value; it won’t be present at all as a key in the Map. The
+groupingBy collector lazily adds a new key in the grouping Map only the first time it finds an
+element in the stream, producing that key when applying on it the grouping criteria being used.
+This means that in this case, the Optional wrapper isn’t very useful, because it’s not modeling a
+value that could be eventually absent but is there incidentally, only because this is the type
+returned by the reducing collector
