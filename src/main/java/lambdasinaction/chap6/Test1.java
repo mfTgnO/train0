@@ -255,5 +255,6 @@ encode the same operation. This results in the following:*/
                 .reduce(Integer::sum)
                 .get();
         System.out.println(totalCalories);
+        System.out.println(123);
     }
 }
