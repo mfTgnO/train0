@@ -82,5 +82,7 @@ collector as a second argument to the groupingBy collector:*/
         Map<Dish.Type, Integer> totalCaloriesByType = menu.stream()
                 .collect(groupingBy(Dish::getType, summingInt(Dish::getCalories)));
         System.out.println(totalCaloriesByType);
+
+
     }
 }
