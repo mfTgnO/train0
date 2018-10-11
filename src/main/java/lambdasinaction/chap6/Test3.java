@@ -14,7 +14,9 @@ public class Test3 {
 //        test4();
 //        test5();
 //        test6();
-        test7();
+//        test7();
+//        test8();
+        test9();
     }
 
     public enum CaloricLevel {DIET, NORMAL, FAT}
@@ -84,5 +86,29 @@ collector as a second argument to the groupingBy collector:*/
         System.out.println(totalCaloriesByType);
 
 
+    }
+
+    /*suppose you want to know which CaloricLevels
+are available in the menu for each type of Dish. You could achieve this result combining a
+groupingBy and a mapping collector as follows:*/
+    public static void test8() {
+        Map<Dish.Type, Set<CaloricLevel>> caloricLevelsByType = menu.stream()
+                .collect(groupingBy(Dish::getType, mapping(dish -> {
+                    if (dish.getCalories() <= 400) return CaloricLevel.DIET;
+                    else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+                    else return CaloricLevel.FAT;
+                }, toSet())));
+        System.out.println(caloricLevelsByType);
+    }
+
+    /*For example, you can ask for a HashSet by passing a constructor reference to it:*/
+    public static void test9() {
+        Map<Dish.Type, HashSet<CaloricLevel>> caloricLevelsByType = menu.stream()
+                .collect(groupingBy(Dish::getType, mapping(dish -> {
+                    if (dish.getCalories() <= 400) return CaloricLevel.DIET;
+                    else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+                    else return CaloricLevel.FAT;
+                }, toCollection(HashSet::new))));
+        System.out.println(caloricLevelsByType);
     }
 }
