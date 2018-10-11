@@ -1,9 +1,6 @@
 package lambdasinaction.chap6;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -16,7 +13,19 @@ public class Test4 {
 //        test2();
 //        test3();
 //        test4();
-        test5();
+//        test5();
+//        test7();
+//        test8();
+//        test9();
+//        test11();
+//        test12();
+//        test13();
+//        test14();
+//        test15();
+//        test16();
+        test17();
+        /*boolean flag = isPrime(4);
+        System.out.println(flag);*/
     }
 
     /*For instance,
@@ -58,5 +67,103 @@ both vegetarian and nonvegetarian dishes:*/
     public static boolean isPrime(int candidate) {
         int candidateRoot = (int) Math.sqrt((double) candidate);
         return IntStream.rangeClosed(2, candidateRoot).noneMatch(i -> i % candidateRoot == 0);
+    }
+
+    /*toCollection Collection<T> Gather all the stream’s items in the collection created
+by the provided supplier.*/
+    public static void test6() {
+//        Collection<Dish> dishes = menu.stream().collect(toCollection(), ArrayList::new);
+    }
+
+    /*counting Long Count the number of items in the stream.*/
+    public static void test7() {
+        Long collect = menu.stream()
+                .collect(counting());
+        System.out.println(collect);
+    }
+
+    /*summingInt Integer Sum the values of an Integer property of the items in
+the stream.*/
+    public static void test8() {
+        /*Integer collect = menu.stream()
+                .collect(summingInt(Dish::getCalories));*/
+        Integer collect = menu.stream().mapToInt(Dish::getCalories).sum();
+        System.out.println(collect);
+    }
+
+    /*averagingInt Double Calculate the average value of an Integer property of
+the items in the stream.*/
+    public static void test9() {
+        Double collect = menu.stream()
+                .collect(averagingInt(Dish::getCalories));
+        System.out.println(collect);
+    }
+
+    /*summarizingInt IntSummary-Statistics Collect statistics regarding an Integer property of the
+items in the stream, such as the maximum, minimum,total, and average.*/
+    public static void test10() {
+        IntSummaryStatistics collect = menu.stream()
+                .collect(summarizingInt(Dish::getCalories));
+        System.out.println(collect);
+    }
+
+    /*joining String Concatenate the strings resulting from the invocation
+of the toString method on each item of the stream.*/
+    public static void test11() {
+        String collect = menu.stream()
+                .map(Dish::getName).collect(joining(", "));
+        System.out.println(collect);
+    }
+
+    /*maxBy Optional<T> An Optional wrapping the maximal element in this
+stream according to the given comparator or Optional.empty() if the stream is empty.*/
+    public static void test12() {
+        /*Optional<Dish> collect = menu.stream()
+                .collect(maxBy(Comparator.comparingInt(Dish::getCalories)));*/
+        Optional<Dish> collect = menu.stream().max(Comparator.comparingInt(Dish::getCalories));
+        System.out.println(collect);
+    }
+
+    /*minBy Optional<T> An Optional wrapping the minimal element in this
+stream according to the given comparator or Optional.empty() if the stream is empty.*/
+    public static void test13() {
+        /*Optional<Dish> collect = menu.stream()
+                .collect(minBy(Comparator.comparingInt(Dish::getCalories)));*/
+        Optional<Dish> collect = menu.stream().min(Comparator.comparingInt(Dish::getCalories));
+        System.out.println(collect);
+    }
+
+    /*reducing The type produced by the reduction operation Reduce the stream to a single value starting from an
+initial value used as accumulator and iteratively combining it with each item of the stream using a BinaryOperator.*/
+    public static void test14() {
+        /*Integer collect = menu.stream()
+                .collect(reducing(0, Dish::getCalories, Integer::sum));*/
+        Integer totalCalories = menu.stream().map(Dish::getCalories).reduce(0, Integer::sum);
+        System.out.println(totalCalories);
+    }
+
+    /*collectingAndThen The type returned by the transforming function
+Wrap another collector and apply a transformation function to its result.*/
+    public static void test15() {
+        Integer howManyDishes = menu.stream()
+                .collect(collectingAndThen(toList(), List::size));
+        System.out.println(howManyDishes);
+    }
+
+    /*groupingBy Map<K, List<T>> Group the items in the stream based on the value of
+one of their properties and use those values as keys in
+the resulting Map.Returned type Used to*/
+    public static void test16() {
+        Map<Dish.Type, List<Dish>> dishesByType = menu.stream()
+                .collect(groupingBy(Dish::getType));
+        System.out.println(dishesByType);
+    }
+
+    /*partitioningBy Map<Boolean, List<T>> Partition the items in the stream based on the result of
+the application of a predicate to each of them.*/
+    public static void test17() {
+        Map<Boolean, List<Dish>> vegetarianDishes = menu.stream()
+                .collect(partitioningBy(Dish::isVegetarian));
+        System.out.println(vegetarianDishes);
     }
 }

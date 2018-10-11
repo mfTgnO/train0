@@ -1,23 +1,19 @@
-6.4.2. Partitioning numbers into prime and nonprime
-Suppose you want to write a method accepting as argument an int n and partitioning the first n
-natural numbers into prime and nonprime. But first, it will be useful to develop a predicate that
-tests to see if a given candidate number is prime or not:
-A simple optimization is to test only for factors less than or equal to the square root of the
-candidate:
-public boolean isPrime(int candidate) {
-int candidateRoot = (int) Math.sqrt((double) candidate);
-return IntStream.rangeClosed(2, candidateRoot)
-.noneMatch(i -> candidate % i == 0);
+6.5.1. Making sense of the methods declared by Collector interface
+We can now analyze one by one the five methods declared by the Collector interface. When we
+do so, you’ll notice that each of the first four methods returns a function that will be invoked by
+the collect method, whereas the fifth one, characteristics, provides a set of characteristics that’s
+a list of hints used by the collect method itself to know which optimizations (for example,
+parallelization) it’s allowed to employ while performing the reduction operation.
+Making a new result container: the supplier method
+The supplier method has to return a Supplier of an empty result—a parameterless function that
+when invoked creates an instance of an empty accumulator used during the collection process.
+Clearly, for a collector returning the accumulator itself as result, like our ToListCollector, this188
+empty accumulator will also represent the result of the collection process when performed on an
+empty stream. In our ToListCollector the supplier will then return an empty List as follows:
+public Supplier<List<T>> supplier() {
+return () -> new ArrayList<T>();
 }
-Now the biggest part of the job is done. To partition the first n numbers into prime and
-nonprime, it’s enough to create a stream containing those n numbers and reduce it with a
-partitioningBy collector using as predicate the isPrime method you just developed:
-public Map<Boolean, List<Integer>> partitionPrimes(int n) {
-return IntStream.rangeClosed(2, n).boxed()
-.collect(
-partitioningBy(candidate -> isPrime(candidate)));
-}184
-We’ve now covered all the collectors that can be created using the static factory methods of the
-Collectors class, showing practical examples of how they work. Table 6.1 brings them all together,
-with the type they return when applied to a Stream<T> and a practical example of their use on a
-Stream<Dish> named menuStream.
+Note that you could also just pass a constructor reference:
+public Supplier<List<T>> supplier() {
+return ArrayList::new;
+}
