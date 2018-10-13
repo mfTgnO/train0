@@ -1,20 +1,37 @@
-6.6. Developing your own collector for better performance
-In section 6.4, where we discussed partitioning, you created a collector, using one of the many
-convenient factory methods provided by the Collectors class, which divides the first n natural
-numbers into primes and nonprimes, as shown in the following listing.195
-Listing 6.6. Partitioning the first n natural numbers into primes and
-nonprimes
-public Map<Boolean, List<Integer>> partitionPrimes(int n) {
-return IntStream.rangeClosed(2, n).boxed()
-.collect(partitioningBy(candidate -> isPrime(candidate));
+6.6.1. Divide only by prime numbers
+One possible optimization is to test only if the candidate number is divisible by prime numbers.
+It’s pointless to test it against a divisor that’s not itself prime! So you can limit the test to only
+the prime numbers found before the current candidate. The problem with the predefined
+collectors you’ve used so far, and the reason you have to develop a custom one, is that during the
+collecting process you don’t have access to the partial result. This means that when testing
+whether a given candidate number is prime or not, you don’t have access to the list of the other
+prime numbers found so far.
+Suppose you had this list; you could pass it to the isPrime method and rewrite it as follows:
+public static boolean isPrime(List<Integer> primes, int candidate) {
+return primes.stream().noneMatch(i -> candidate % i == 0);
 }
-There you achieved an improvement over the original isPrime method by limiting the number of
-divisors to be tested against the candidate prime to those not bigger than the candidate’s square
-root:
-public boolean isPrime(int candidate) {
+Also, you should implement the same optimization you used before and test only with primes
+smaller than the square root of the candidate number. So you need a way to stop testing whether196
+the candidate is divisible by a prime as soon as the next prime is greater than the candidate’s
+root. Unfortunately, there isn’t such a method available in the Streams API. You could use
+filter(p -> p <= candidateRoot) to filter the prime numbers smaller than the candidate root. But
+filter would process the whole stream before returning the adequate stream. If both the list of
+primes and the candidate number were very large, this would be problematic. You don’t need to
+do this; all you want is to stop once you find a prime that’s greater than the candidate root!
+Therefore, you’ll create a method called takeWhile, which, given a sorted list and a predicate,
+returns the longest prefix of this list whose elements satisfy the predicate:
+Using this method, you can optimize the isPrime method by testing only the candidate prime
+against only the primes that are not greater than its square root:
+public static boolean isPrime(List<Integer> primes, int candidate){
 int candidateRoot = (int) Math.sqrt((double) candidate);
-return IntStream.rangeClosed(2, candidateRoot)
-.noneMatch(i -> candidate % i == 0);
+return takeWhile(primes, i -> i <= candidateRoot)
+.stream()
+.noneMatch(p -> candidate % p == 0);
 }
-Is there a way to obtain even better performances? The answer is yes, but for this you’ll have to
-develop a custom collector.
+Note that this is an eager implementation of takeWhile. Ideally you’d like a lazy version of
+takeWhile so it can be merged with the noneMatch operation. Unfortunately, implementing it
+would be beyond the scope of this chapter because you’d need to get a grip on the Streams API
+implementation.
+With this new isPrime method in hand, you’re now ready to implement your own custom
+collector. First, you need to declare a new class that implements the Collector interface. Then,
+you need to develop the five methods required by the Collector interface.
