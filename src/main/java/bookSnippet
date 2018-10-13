@@ -1,19 +1,20 @@
-6.5.1. Making sense of the methods declared by Collector interface
-We can now analyze one by one the five methods declared by the Collector interface. When we
-do so, you’ll notice that each of the first four methods returns a function that will be invoked by
-the collect method, whereas the fifth one, characteristics, provides a set of characteristics that’s
-a list of hints used by the collect method itself to know which optimizations (for example,
-parallelization) it’s allowed to employ while performing the reduction operation.
-Making a new result container: the supplier method
-The supplier method has to return a Supplier of an empty result—a parameterless function that
-when invoked creates an instance of an empty accumulator used during the collection process.
-Clearly, for a collector returning the accumulator itself as result, like our ToListCollector, this188
-empty accumulator will also represent the result of the collection process when performed on an
-empty stream. In our ToListCollector the supplier will then return an empty List as follows:
-public Supplier<List<T>> supplier() {
-return () -> new ArrayList<T>();
+6.6. Developing your own collector for better performance
+In section 6.4, where we discussed partitioning, you created a collector, using one of the many
+convenient factory methods provided by the Collectors class, which divides the first n natural
+numbers into primes and nonprimes, as shown in the following listing.195
+Listing 6.6. Partitioning the first n natural numbers into primes and
+nonprimes
+public Map<Boolean, List<Integer>> partitionPrimes(int n) {
+return IntStream.rangeClosed(2, n).boxed()
+.collect(partitioningBy(candidate -> isPrime(candidate));
 }
-Note that you could also just pass a constructor reference:
-public Supplier<List<T>> supplier() {
-return ArrayList::new;
+There you achieved an improvement over the original isPrime method by limiting the number of
+divisors to be tested against the candidate prime to those not bigger than the candidate’s square
+root:
+public boolean isPrime(int candidate) {
+int candidateRoot = (int) Math.sqrt((double) candidate);
+return IntStream.rangeClosed(2, candidateRoot)
+.noneMatch(i -> candidate % i == 0);
 }
+Is there a way to obtain even better performances? The answer is yes, but for this you’ll have to
+develop a custom collector.
