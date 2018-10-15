@@ -1,37 +1,25 @@
-6.6.1. Divide only by prime numbers
-One possible optimization is to test only if the candidate number is divisible by prime numbers.
-It’s pointless to test it against a divisor that’s not itself prime! So you can limit the test to only
-the prime numbers found before the current candidate. The problem with the predefined
-collectors you’ve used so far, and the reason you have to develop a custom one, is that during the
-collecting process you don’t have access to the partial result. This means that when testing
-whether a given candidate number is prime or not, you don’t have access to the list of the other
-prime numbers found so far.
-Suppose you had this list; you could pass it to the isPrime method and rewrite it as follows:
-public static boolean isPrime(List<Integer> primes, int candidate) {
-return primes.stream().noneMatch(i -> candidate % i == 0);
-}
-Also, you should implement the same optimization you used before and test only with primes
-smaller than the square root of the candidate number. So you need a way to stop testing whether196
-the candidate is divisible by a prime as soon as the next prime is greater than the candidate’s
-root. Unfortunately, there isn’t such a method available in the Streams API. You could use
-filter(p -> p <= candidateRoot) to filter the prime numbers smaller than the candidate root. But
-filter would process the whole stream before returning the adequate stream. If both the list of
-primes and the candidate number were very large, this would be problematic. You don’t need to
-do this; all you want is to stop once you find a prime that’s greater than the candidate root!
-Therefore, you’ll create a method called takeWhile, which, given a sorted list and a predicate,
-returns the longest prefix of this list whose elements satisfy the predicate:
-Using this method, you can optimize the isPrime method by testing only the candidate prime
-against only the primes that are not greater than its square root:
-public static boolean isPrime(List<Integer> primes, int candidate){
-int candidateRoot = (int) Math.sqrt((double) candidate);
-return takeWhile(primes, i -> i <= candidateRoot)
-.stream()
-.noneMatch(p -> candidate % p == 0);
-}
-Note that this is an eager implementation of takeWhile. Ideally you’d like a lazy version of
-takeWhile so it can be merged with the noneMatch operation. Unfortunately, implementing it
-would be beyond the scope of this chapter because you’d need to get a grip on the Streams API
-implementation.
-With this new isPrime method in hand, you’re now ready to implement your own custom
-collector. First, you need to declare a new class that implements the Collector interface. Then,
-you need to develop the five methods required by the Collector interface.
+6.6.2. Comparing collectors’ performances
+The collector created with the partitioningBy factory method and the custom one you just
+developed are functionally identical, but did you achieve your goal of improving the
+performance of the partitioningBy collector with your custom one? Let’s write a quick harness to
+check this:201
+Note that a more scientific benchmarking approach would be to use a framework such as JMH,
+but we didn’t want to add the complexity of using such a framework here and, for this use case,
+the results provided by this small benchmarking class are accurate enough. This class partitions
+the first million natural numbers into primes and nonprimes, invoking the method using the
+collector created with the partitioningBy factory method 10 times and registering the fastest
+execution. Running it on an Intel i5 2.4 GHz, it prints the following result:
+Fastest execution done in 4716 msecs
+Now replace partitionPrimes with partitionPrimesWithCustomCollector in the harness, in order
+to test the performances of the custom collector you developed. Now the program prints
+Fastest execution done in 3201 msecs
+Not bad! This means you didn’t waste your time developing this custom collector for two
+reasons: first, you learned how to implement your own collector when you need it, and second,
+you achieved a performance improvement of around 32%.
+Finally, it’s important to note that, as you did for the ToListCollector in listing 6.5, it’s possible
+to obtain the same result by passing the three functions implementing the core logic of
+PrimeNumbersCollector to the overloaded version of the collect method, taking them as
+arguments:202
+As you can see, in this way you can avoid creating a completely new class that implements the
+Collector interface; the resulting code is more compact, even if it’s also probably less readable
+and certainly less reusable.
