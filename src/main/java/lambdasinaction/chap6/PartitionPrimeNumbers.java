@@ -24,10 +24,10 @@ public class PartitionPrimeNumbers {
                 .noneMatch(i -> candidate % i == 0);
     }
 
-    public static Map<Boolean, List<Integer>> partitionPrimesWithCustomCollector(int n) {
+    /*public static Map<Boolean, List<Integer>> partitionPrimesWithCustomCollector(int n) {
         return IntStream.rangeClosed(2, n).boxed().collect(new PrimeNumbersCollector());
 
-    }
+    }*/
 
     /*public static boolean isPrime(List<Integer> primes, Integer candidate) {
         double candidateRoot = Math.sqrt((double) candidate);
@@ -37,13 +37,13 @@ public class PartitionPrimeNumbers {
 
     }*/
 
-    public static boolean isPrime(List<Integer> primes, Integer candidate) {
+    /*public static boolean isPrime(List<Integer> primes, Integer candidate) {
         double candidateRoot = Math.sqrt((double) candidate);
         //return takeWhile(primes, i -> i <= candidateRoot).stream().noneMatch(i -> candidate % i == 0);
         return primes.stream().takeWhile(i -> {
             return i <= candidateRoot
         }).noneMatch(i -> candidate % i == 0);
-    }
+    }*/
 
     public static <A> List<A> takeWhile(List<A> list, Predicate<A> p) {
         int i = 0;
@@ -56,7 +56,7 @@ public class PartitionPrimeNumbers {
         return list;
     }
 
-    public static class PrimeNumbersCollector implements Collector<Integer, Map<Boolean, List<Integer>>, Map<Boolean, List<Integer>>> {
+    /*public static class PrimeNumbersCollector implements Collector<Integer, Map<Boolean, List<Integer>>, Map<Boolean, List<Integer>>> {
 
         @Override
         public Supplier<Map<Boolean, List<Integer>>> supplier() {
@@ -95,7 +95,7 @@ public class PartitionPrimeNumbers {
         }
     }
 
-    public Map<Boolean, List<Integer>> partitionPrimesWithInlineCollector(int n) {
+    *//*public Map<Boolean, List<Integer>> partitionPrimesWithInlineCollector(int n) {
         return Stream.iterate(2, i -> i + 1)
                 .limit(n)
                 .collect(() -> new HashMap<Boolean, List<Integer>>() {{
@@ -109,5 +109,5 @@ public class PartitionPrimeNumbers {
                             map1.get(false).addAll(map2.get(false));
 
                         });
-    }
+    }*/
 }

@@ -23,3 +23,4 @@ arguments:202
 As you can see, in this way you can avoid creating a completely new class that implements the
 Collector interface; the resulting code is more compact, even if it’s also probably less readable
 and certainly less reusable.
+
