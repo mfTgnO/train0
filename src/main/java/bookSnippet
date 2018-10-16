@@ -1,26 +1,24 @@
-6.6.2. Comparing collectors’ performances
-The collector created with the partitioningBy factory method and the custom one you just
-developed are functionally identical, but did you achieve your goal of improving the
-performance of the partitioningBy collector with your custom one? Let’s write a quick harness to
-check this:201
-Note that a more scientific benchmarking approach would be to use a framework such as JMH,
-but we didn’t want to add the complexity of using such a framework here and, for this use case,
-the results provided by this small benchmarking class are accurate enough. This class partitions
-the first million natural numbers into primes and nonprimes, invoking the method using the
-collector created with the partitioningBy factory method 10 times and registering the fastest
-execution. Running it on an Intel i5 2.4 GHz, it prints the following result:
-Fastest execution done in 4716 msecs
-Now replace partitionPrimes with partitionPrimesWithCustomCollector in the harness, in order
-to test the performances of the custom collector you developed. Now the program prints
-Fastest execution done in 3201 msecs
-Not bad! This means you didn’t waste your time developing this custom collector for two
-reasons: first, you learned how to implement your own collector when you need it, and second,
-you achieved a performance improvement of around 32%.
-Finally, it’s important to note that, as you did for the ToListCollector in listing 6.5, it’s possible
-to obtain the same result by passing the three functions implementing the core logic of
-PrimeNumbersCollector to the overloaded version of the collect method, taking them as
-arguments:202
-As you can see, in this way you can avoid creating a completely new class that implements the
-Collector interface; the resulting code is more compact, even if it’s also probably less readable
-and certainly less reusable.
-
+7.1. Parallel streams
+In chapter 4, we briefly mentioned that the Stream interface allows you to process its elements
+in parallel in a very convenient way: it’s possible to turn a collection into a parallel stream by
+invoking the method parallelStream on the collection source. A parallel stream is a stream that
+splits its elements into multiple chunks, processing each chunk with a different thread. Thus,
+you can automatically partition the workload of a given operation on all the cores of your
+multicore processor and keep all of them equally busy. Let’s experiment with this idea by using a
+simple example.
+Let’s suppose you need to write a method accepting a number n as argument and returning the
+sum of all the numbers from 1 to the given argument. A straightforward (perhaps naïve)
+approach is to generate an infinite stream of numbers, limiting it to the passed number, and
+then reduce the resulting stream with a BinaryOperator that just sums two numbers, as follows:
+In more traditional Java terms, this code is equivalent to its iterative counterpart:
+public static long iterativeSum(long n) {
+long result = 0;
+for (long i = 1L; i <= n; i++) {
+result += i;
+}
+return result;
+}
+This operation seems to be a good candidate to leverage parallelization, especially for large
+values of n. But where do you start? Do you synchronize on the result variable? How many
+threads do you use? Who does the generation of numbers? Who adds them up?
+Don’t worry about all of this. It’s a much simpler problem to solve if you adopt parallel streams!
