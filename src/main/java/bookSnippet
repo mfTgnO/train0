@@ -1,53 +1,7 @@
-7.1.2. Measuring stream performance
-We claimed that the parallelized summing method should perform better than the sequential
-and the iterative methods. Nevertheless, in software engineering guessing is never a good idea!
-Especially when optimizing performance you should always follow three golden rules: measure,
-measure, measure. To this purpose you can develop a method very similar to the basic harness
-you used in section 6.6.2 to compare the performances of the two collectors partitioning
-numbers into prime and nonprime, as shown in the following listing.
-Listing 7.1. Measuring performance of a function summing the first n
-numbers
-public long measureSumPerf(Function<Long, Long> adder, long n) {
-long fastest = Long.MAX_VALUE;
-for (int i = 0; i < 10; i++) {
-long start = System.nanoTime();
-long sum = adder.apply(n);
-long duration = (System.nanoTime() - start) / 1_000_000;
-System.out.println("Result: " + sum);
-if (duration < fastest) fastest = duration;
-}
-return fastest;
-}
-Here this method takes as arguments a function and a long. It applies the function 10 times on
-the long passed to the method, registers the time taken by each execution in milliseconds, and
-returns the duration of the fastest one. Supposing that you group all the methods you developed
-previously into a class named ParallelStreams, you can use this harness to check how long the
-sequential adder function takes to sum the first 10 million natural numbers:
-System.out.println("Sequential sum done in: " +
-measureSumPerf(ParallelStreams::sequentialSum, 10_000_000) + " msecs");208
-Note that the results should be taken with a grain of salt. Many factors will influence the
-execution time, such as how many cores your machine supports! You can try this on your own
-machine by running the code available on the book’s repository. Executing it on a MacBook pro
-Intel i7 2.3 GHz quad-core, it prints the following:
-Sequential sum done in: 97 msecs
-You should expect that the iterative version using a traditional for loop runs much faster
-because it works at a much lower level and, more important, doesn’t need to perform any boxing
-or unboxing of the primitive values. If you try to measure its performance with
-System.out.println("Iterative sum done in: " +
-measureSumPerf(ParallelStreams::iterativeSum, 10_000_000) + " msecs");
-you’ll obtain
-Iterative sum done in: 2 msecs
-Now let’s do the same with the parallel version of that function
-System.out.println("Parallel sum done in: " +
-measureSumPerf(ParallelStreams::parallelSum, 10_000_000) + " msecs" );
-and see what happens:
-Parallel sum done in: 164 msecs
-This is quite disappointing: the parallel version of the summing method is much slower than the
-sequential one. How can you explain this unexpected result? There are actually two issues mixed
-together:
- iterate generates boxed objects, which have to be unboxed to numbers before they can be added.
- iterate is difficult to divide into independent chunks to execute in parallel.
-The second issue is particularly interesting because you need to keep a mental model that some
-stream operations are more parallelizable than others. Specifically, the iterate operation is hard
-to split into chunks that can be executed independently because the input of one function
-application always depends on the result of the previous application, as illustrated in figure 7.2.
+As you might have noticed, this is nothing more than the parallel version of the well-known
+
+ algorithm. To demonstrate a practical example of how to use the fork/join
+framework and to build on our previous examples, let’s try to calculate the sum of a range of
+numbers (here represented by an array of numbers long[]) using this framework. As explained,
+you need to first provide an implementation for the RecursiveTask class, as shown by the
+ForkJoinSumCalculator in the following listing.
