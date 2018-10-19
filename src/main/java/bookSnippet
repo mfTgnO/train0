@@ -1,7 +1,0 @@
-As you might have noticed, this is nothing more than the parallel version of the well-known
-
- algorithm. To demonstrate a practical example of how to use the fork/join
-framework and to build on our previous examples, let’s try to calculate the sum of a range of
-numbers (here represented by an array of numbers long[]) using this framework. As explained,
-you need to first provide an implementation for the RecursiveTask class, as shown by the
-ForkJoinSumCalculator in the following listing.

@@ -1,4 +1,4 @@
-package skill.common.BigDecimalTutorial;
+package skill.common.bigdecimaltutorial;
 
 import java.math.BigDecimal;
 

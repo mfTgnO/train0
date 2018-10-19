@@ -1,4 +1,4 @@
-package skill.common.ChineseCharactersSize;
+package skill.common.chinesecharacterssize;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;

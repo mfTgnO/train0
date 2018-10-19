@@ -6,7 +6,7 @@ import java.util.List;
 /*Difference between <? super T> and <? extends T> in Java [duplicate]
  * https://stackoverflow.com/questions/4343202/difference-between-super-t-and-extends-t-in-java
  * */
-public class ExtendsDemo {
+public class extendsdemo {
     public static void main(String[] args) {
 
     }
