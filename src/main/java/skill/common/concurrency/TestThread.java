@@ -8,7 +8,8 @@ public class TestThread {
     public static void main(String[] args) {
 //        test1();
 //        test2();
-        test3();
+//        test3();
+        test4();
     }
 
     private static void test1() {
@@ -64,5 +65,23 @@ public class TestThread {
         Chat chat = new Chat();
         new T1(chat);
         new T2(chat);
+    }
+
+    private static void test4() {
+        PrintDemo printDemo = new PrintDemo();
+        ThreadDemo2 t1 = new ThreadDemo2("Thread - 1 ", printDemo);
+        ThreadDemo2 t2 = new ThreadDemo2("Thread - 2 ", printDemo);
+        t1.start();
+        t2.start();
+
+        // wait for threads to end
+        try {
+            t1.join();
+            t2.join();
+        } catch (Exception e) {
+            System.out.println("Interrupted");
+
+        }
+
     }
 }

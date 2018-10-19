@@ -4,7 +4,7 @@ public class ThreadDemo extends Thread {
     private Thread t;
     private String threadName;
 
-    public ThreadDemo(String threadName) {
+    ThreadDemo(String threadName) {
         this.threadName = threadName;
         System.out.println("Creating " + threadName);
     }
