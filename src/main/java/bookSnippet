@@ -1,15 +1,4 @@
-Putting the WordCounterSpliterator to work
-You can now use a parallel stream with this new WordCounterSpliterator as follows:
-Spliterator<Character> spliterator = new WordCounterSpliterator(SENTENCE);
-Stream<Character> stream = StreamSupport.stream(spliterator, true);
-The second boolean argument passed to the StreamSupport.stream factory method means that
-you want to create a parallel stream. Passing this parallel stream to the countWords method
-System.out.println("Found " + countWords(stream) + " words");
-produces the correct output, as expected:
-Found 19 words
-You’ve seen how a Spliterator can let you to gain control over the policy used to split a data
-structure. One last notable feature of Spliterators is the possibility of binding the source of the
-elements to be traversed at the point of first traversal, first split, or first query for estimated size,
-rather than at the time of its creation. When this happens, it’s called a late-binding Spliterator.
-We’ve dedicated appendix C to showing how you can develop a utility class capable of
-performing multiple operations on the same stream in parallel using this feature.
+As you can see, lambda expressions remove the boilerplate code inherent to the strategy design
+pattern. If you think about it, lambda expressions encapsulate a piece of code (or strategy),
+which is what the strategy design pattern was created for, so we recommend that you use
+lambda expressions instead for similar problems.
