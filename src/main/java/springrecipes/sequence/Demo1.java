@@ -4,10 +4,32 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 public class Demo1 {
     public static void main(String[] args) {
-        test1();
+//        test1();
+//        test2();
+        test3();
     }
 
     private static void test1() {
         AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(SequenceGeneratorConfiguration.class);
+        SequenceGenerator sequenceGenerator = (SequenceGenerator) applicationContext.getBean("sequenceGenerator");
+        System.out.println(sequenceGenerator.getSequence());
+        System.out.println(sequenceGenerator.getSequence());
+    }
+
+    // The getBean() method also supports another variation where you can provide the bean class name to
+    // avoid making the cast.
+    private static void test2() {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(SequenceGeneratorConfiguration.class);
+        SequenceGenerator sequenceGenerator = applicationContext.getBean("sequenceGenerator", SequenceGenerator.class);
+        System.out.println(sequenceGenerator.getSequence());
+        System.out.println(sequenceGenerator.getSequence());
+    }
+
+    // If there is only a single bean, you can omit the bean name.
+    private static void test3() {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(SequenceGeneratorConfiguration.class);
+        SequenceGenerator sequenceGenerator = applicationContext.getBean(SequenceGenerator.class);
+        System.out.println(sequenceGenerator.getSequence());
+        System.out.println(sequenceGenerator.getSequence());
     }
 }

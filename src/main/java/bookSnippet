@@ -1,32 +1,81 @@
-Get POJO Instances or Beans from the IoC Container
-To get a declared bean from a bean factory or an application context, you just make a call to the getBean()
-method and pass in the unique bean name. The return type of the getBean() method is java.lang.Object,
-so you have to cast it to its actual type before using it.
-SequenceGenerator generator =
-(SequenceGenerator) context.getBean("sequenceGenerator");
-The getBean() method also supports another variation where you can provide the bean class name to
-avoid making the cast.
-SequenceGenerator generator = context.getBean("sequenceGenerator",SequenceGenerator.class);
-If there is only a single bean, you can omit the bean name.
-SequenceGenerator generator = context.getBean(SequenceGenerator.class);
-Once you reach this step, you can use the POJO or bean just like any object created using a constructor
-outside of Spring.
-A Main class to run the sequence generator application would look like the following:
+Create POJO Class with the @Component Annotation to Create Beans
+with DAO
+Up to this point, the Spring bean instantiations have been done by hard-coding the values in a Java config
+class. This was the preferred approach to simplify the Spring examples.
+However, the POJO instantiation process for most applications is done from either a database or
+user input. So, now it’s time to move forward and use a more real-world scenario. For this section, we’ll
+use a Domain class and a Data Access Object (DAO) class to create POJOs. You still won’t need to set up a
+database—you’ll actually hard-code values in the DAO class—but familiarizing yourself with this type of
+application structure is important since it’s the basis for most real-world applications and future recipes.
+Suppose you are asked to develop a sequence generator application like the one you did in the previous
+section. You’ll need to modify the class structure slightly to accommodate a Domain class and DAO pattern.
+First, create a domain class called Sequence containing the id, prefix, and suffix properties.
 package com.apress.springrecipes.sequence;
-import com.apress.springrecipes.sequence.config.SequenceGeneratorConfiguration;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;ChAPTeR 2 ■ SPRInG CORe TASkS
-31
-public class Main {
-public static void main(String[] args) {
-ApplicationContext context =
-new AnnotationConfigApplicationContext(SequenceGeneratorConfiguration.class);
-SequenceGenerator generator = context.getBean(SequenceGenerator.class);
-System.out.println(generator.getSequence());
-System.out.println(generator.getSequence());
+public class Sequence {
+private final String id;
+private final String prefix;
+private final String suffix;
+public Sequence(String id, String prefix, String suffix) {
+this.id = id;
+this.prefix = prefix;
+this.suffix = suffix;
+}
+public String getId() {
+return id;
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+32
+public String getPrefix() {
+return prefix;
+}
+public String getSuffix() {
+return suffix;
 }
 }
-If everything is available in the Java classpath (the SequenceGenerator POJO class and the Spring JAR
-dependencies), you should see the following output, along with some logging messages:
-30100000A
-30100001A
+Then, you create an interface for the DAO, which is responsible for accessing data from the database.
+The getSequence() method loads a POJO or Sequence object from a database table by its ID, while the
+getNextValue() method retrieves the next value of a particular database sequence.
+package com.apress.springrecipes.sequence;
+public interface SequenceDao {
+public Sequence getSequence(String sequenceId);
+public int getNextValue(String sequenceId);
+}
+In a production application, you would implement this DAO interface to use a data-access technology.
+But to simplify this example, you’ll implement a DAO with hard-coded values in a Map to store the sequence
+instances and values.
+package com.apress.springrecipes.sequence;
+import org.springframework.stereotype.Component;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+@Component("sequenceDao")
+public class SequenceDaoImpl implements SequenceDao {
+private final Map<String, Sequence> sequences = new HashMap<>();
+private final Map<String, AtomicInteger> values = new HashMap<>();
+public SequenceDaoImpl() {
+sequences.put("IT", new Sequence("IT", "30", "A"));
+values.put("IT", new AtomicInteger(10000));
+}
+public Sequence getSequence(String sequenceId) {
+return sequences.get(sequenceId);
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+33
+public int getNextValue(String sequenceId) {
+AtomicInteger value = values.get(sequenceId);
+return value.getAndIncrement();
+}
+}
+Observe how the SequenceDaoImpl class is decorated with the @Component("sequenceDao")
+annotation. This marks the class so Spring can create POJOs from it. The value inside the @Component
+annotation defines the bean instance ID, in this case sequenceDao. If no bean value name is provided in the
+@Component annotation, by default the bean name is assigned as the uncapitalized nonqualified class name.
+For example, for the SequenceDaoImpl class, the default bean name would be sequenceDaoImpl.
+A call to the getSequence method returns the value of the given sequenceID. And a call to the getNextValue
+method creates a new value based on the value of the given sequenceID and returns the new value.
+POJOs are classified in application layers. In Spring there are three layers: persistence, service, and
+presentation. @Component is a general-purpose annotation to decorate POJOs for Spring detection, whereas
+@Repository, @Service, and @Controller are specializations of @Component for more specific cases of POJOs
+associated with the persistence, service, and presentation layers.
+If you’re unsure about a POJO’s purpose, you can decorate it with the @Component annotation. However,
+it’s better to use the specialization annotations where possible because these provide extra facilities based
+on a POJO’s purpose (e.g., @Repository causes exceptions to be wrapped up as DataAccessExceptions,
+which makes debugging easier).
