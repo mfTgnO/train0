@@ -1,4 +1,32 @@
-As you can see, lambda expressions remove the boilerplate code inherent to the strategy design
-pattern. If you think about it, lambda expressions encapsulate a piece of code (or strategy),
-which is what the strategy design pattern was created for, so we recommend that you use
-lambda expressions instead for similar problems.
+Get POJO Instances or Beans from the IoC Container
+To get a declared bean from a bean factory or an application context, you just make a call to the getBean()
+method and pass in the unique bean name. The return type of the getBean() method is java.lang.Object,
+so you have to cast it to its actual type before using it.
+SequenceGenerator generator =
+(SequenceGenerator) context.getBean("sequenceGenerator");
+The getBean() method also supports another variation where you can provide the bean class name to
+avoid making the cast.
+SequenceGenerator generator = context.getBean("sequenceGenerator",SequenceGenerator.class);
+If there is only a single bean, you can omit the bean name.
+SequenceGenerator generator = context.getBean(SequenceGenerator.class);
+Once you reach this step, you can use the POJO or bean just like any object created using a constructor
+outside of Spring.
+A Main class to run the sequence generator application would look like the following:
+package com.apress.springrecipes.sequence;
+import com.apress.springrecipes.sequence.config.SequenceGeneratorConfiguration;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;ChAPTeR 2 ■ SPRInG CORe TASkS
+31
+public class Main {
+public static void main(String[] args) {
+ApplicationContext context =
+new AnnotationConfigApplicationContext(SequenceGeneratorConfiguration.class);
+SequenceGenerator generator = context.getBean(SequenceGenerator.class);
+System.out.println(generator.getSequence());
+System.out.println(generator.getSequence());
+}
+}
+If everything is available in the Java classpath (the SequenceGenerator POJO class and the Spring JAR
+dependencies), you should see the following output, along with some logging messages:
+30100000A
+30100001A

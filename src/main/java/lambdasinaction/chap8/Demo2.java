@@ -1,11 +1,14 @@
 package lambdasinaction.chap8;
 
+import java.math.BigDecimal;
+
 public class Demo2 {
     public static void main(String[] args) {
 //        test1();
 //        test2();
 //        test3();
-        test4();
+//        test4();
+        test5();
     }
 
     private static void doSomeThing(Runnable r) {
@@ -45,4 +48,19 @@ public class Demo2 {
     private static void test4() {
         doSomeThing((Task) () -> System.out.println("Danger danger!!"));
     }
+
+    private static void test5(){
+        BigDecimal bdec1 = new BigDecimal("1");
+        BigDecimal bdec2 = new BigDecimal("3");
+        BigDecimal bdec3 = new BigDecimal("3");
+
+        int i = bdec1.compareTo(bdec2);
+        int i1 = bdec2.compareTo(bdec3);
+        int i2 = bdec2.compareTo(bdec1);
+
+        System.out.println(i);
+        System.out.println(i1);
+        System.out.println(i2);
+    }
 }
+//
