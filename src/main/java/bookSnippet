@@ -1,81 +1,24 @@
-Create POJO Class with the @Component Annotation to Create Beans
-with DAO
-Up to this point, the Spring bean instantiations have been done by hard-coding the values in a Java config
-class. This was the preferred approach to simplify the Spring examples.
-However, the POJO instantiation process for most applications is done from either a database or
-user input. So, now it’s time to move forward and use a more real-world scenario. For this section, we’ll
-use a Domain class and a Data Access Object (DAO) class to create POJOs. You still won’t need to set up a
-database—you’ll actually hard-code values in the DAO class—but familiarizing yourself with this type of
-application structure is important since it’s the basis for most real-world applications and future recipes.
-Suppose you are asked to develop a sequence generator application like the one you did in the previous
-section. You’ll need to modify the class structure slightly to accommodate a Domain class and DAO pattern.
-First, create a domain class called Sequence containing the id, prefix, and suffix properties.
+Get POJO Instances or Beans from the IoC Container
+Then, you can test the preceding components with the following Main class:
 package com.apress.springrecipes.sequence;
-public class Sequence {
-private final String id;
-private final String prefix;
-private final String suffix;
-public Sequence(String id, String prefix, String suffix) {
-this.id = id;
-this.prefix = prefix;
-this.suffix = suffix;
-}
-public String getId() {
-return id;
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-32
-public String getPrefix() {
-return prefix;
-}
-public String getSuffix() {
-return suffix;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+public class Main {
+public static void main(String[] args) {
+ApplicationContext context =
+new AnnotationConfigApplicationContext("com.apress.springrecipes.sequence");
+SequenceDao sequenceDao = context.getBean(SequenceDao.class);
+System.out.println(sequenceDao.getNextValue("IT"));
+System.out.println(sequenceDao.getNextValue("IT"));
 }
 }
-Then, you create an interface for the DAO, which is responsible for accessing data from the database.
-The getSequence() method loads a POJO or Sequence object from a database table by its ID, while the
-getNextValue() method retrieves the next value of a particular database sequence.
-package com.apress.springrecipes.sequence;
-public interface SequenceDao {
-public Sequence getSequence(String sequenceId);
-public int getNextValue(String sequenceId);
-}
-In a production application, you would implement this DAO interface to use a data-access technology.
-But to simplify this example, you’ll implement a DAO with hard-coded values in a Map to store the sequence
-instances and values.
-package com.apress.springrecipes.sequence;
-import org.springframework.stereotype.Component;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-@Component("sequenceDao")
-public class SequenceDaoImpl implements SequenceDao {
-private final Map<String, Sequence> sequences = new HashMap<>();
-private final Map<String, AtomicInteger> values = new HashMap<>();
-public SequenceDaoImpl() {
-sequences.put("IT", new Sequence("IT", "30", "A"));
-values.put("IT", new AtomicInteger(10000));
-}
-public Sequence getSequence(String sequenceId) {
-return sequences.get(sequenceId);
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-33
-public int getNextValue(String sequenceId) {
-AtomicInteger value = values.get(sequenceId);
-return value.getAndIncrement();
-}
-}
-Observe how the SequenceDaoImpl class is decorated with the @Component("sequenceDao")
-annotation. This marks the class so Spring can create POJOs from it. The value inside the @Component
-annotation defines the bean instance ID, in this case sequenceDao. If no bean value name is provided in the
-@Component annotation, by default the bean name is assigned as the uncapitalized nonqualified class name.
-For example, for the SequenceDaoImpl class, the default bean name would be sequenceDaoImpl.
-A call to the getSequence method returns the value of the given sequenceID. And a call to the getNextValue
-method creates a new value based on the value of the given sequenceID and returns the new value.
-POJOs are classified in application layers. In Spring there are three layers: persistence, service, and
-presentation. @Component is a general-purpose annotation to decorate POJOs for Spring detection, whereas
-@Repository, @Service, and @Controller are specializations of @Component for more specific cases of POJOs
-associated with the persistence, service, and presentation layers.
-If you’re unsure about a POJO’s purpose, you can decorate it with the @Component annotation. However,
-it’s better to use the specialization annotations where possible because these provide extra facilities based
-on a POJO’s purpose (e.g., @Repository causes exceptions to be wrapped up as DataAccessExceptions,
-which makes debugging easier).
+2-2. Create POJOs by Invoking a Constructor
+Problem
+You want to create a POJO instance or bean in the Spring IoC container by invoking its constructor, which
+is the most common and direct way of creating beans. It is equivalent to using the new operator to create
+objects in Java.
+Solution
+Define a POJO class with a constructor or constructors. Next, create a Java config class to configure POJO
+instance values with constructors for the Spring IoC container. Next, instantiate the Spring IoC container to
+scan for Java classes with annotations. The POJO instances or bean instances become accessible to be put
+together as part of an application.
