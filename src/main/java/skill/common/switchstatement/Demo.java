@@ -1,5 +1,9 @@
 package skill.common.switchstatement;
 
+/*
+* switch statement in java
+* https://www.tutorialspoint.com/java/switch_statement_in_java.htm
+* */
 public class Demo {
     public static void main(String[] args) {
 //        test1('C');
