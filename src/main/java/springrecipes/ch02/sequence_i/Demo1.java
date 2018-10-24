@@ -1,4 +1,4 @@
-package springrecipes.sequence;
+package springrecipes.ch02.sequence_i;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -36,7 +36,7 @@ public class Demo1 {
 
     // Then, you can test the preceding components with the following test:
     private static void test4() {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext("springrecipes.sequence");
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext("springrecipes.ch02.sequence_i");
         SequenceDao sequenceDao = context.getBean(SequenceDao.class);
         System.out.println(sequenceDao.getNextValue("IT"));
         System.out.println(sequenceDao.getNextValue("IT"));

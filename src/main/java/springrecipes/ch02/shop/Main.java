@@ -1,4 +1,4 @@
-package springrecipes.shop;
+package springrecipes.ch02.shop;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 

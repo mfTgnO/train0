@@ -1,4 +1,4 @@
-package springrecipes.shop;
+package springrecipes.ch02.shop;
 
 public class Disc extends Product {
     private int capacity;

@@ -1,4 +1,4 @@
-package springrecipes.shop;
+package springrecipes.ch02.shop;
 
 public class Battery extends Product {
     private boolean rechargeable;

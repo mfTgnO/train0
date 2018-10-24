@@ -1,24 +1,41 @@
-Get POJO Instances or Beans from the IoC Container
-Then, you can test the preceding components with the following Main class:
-package com.apress.springrecipes.sequence;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-public class Main {
-public static void main(String[] args) {
-ApplicationContext context =
-new AnnotationConfigApplicationContext("com.apress.springrecipes.sequence");
-SequenceDao sequenceDao = context.getBean(SequenceDao.class);
-System.out.println(sequenceDao.getNextValue("IT"));
-System.out.println(sequenceDao.getNextValue("IT"));
+Resolve POJO References from Multiple Locations
+As an application grows, it can become difficult to manage every POJO in a single Java configuration class.
+A common practice is to separate POJOs into multiple Java configuration classes according to their functionalities.
+When you create multiple Java configuration classes, obtaining references and autowiring POJOs that are defined
+in different classes isn’t as straightforward as when everything is in a single Java configuration class.
+One approach is to initialize the application context with the location of each Java configuration class.
+In this manner, the POJOs for each Java configuration class are loaded into the context and references, and
+autowiring between POJOs is possible.
+AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext
+(PrefixConfiguration.class, SequenceGeneratorConfiguration.class);
+Another alternative is to use the @Import annotation so Spring makes the POJOs from one configuration
+file available in another.
+package com.apress.springrecipes.sequence.config;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import com.apress.springrecipes.sequence.SequenceGenerator;
+import com.apress.springrecipes.sequence.PrefixGenerator;
+@Configuration
+@Import(PrefixConfiguration.class)
+public class SequenceConfiguration {
+@Value("#{datePrefixGenerator}")
+private PrefixGenerator prefixGenerator;
+@Bean
+public SequenceGenerator sequenceGenerator() {
+SequenceGenerator sequence= new SequenceGenerator();
+sequence.setInitial(100000);
+sequence.setSuffix("A");
+sequence.setPrefixGenerator(prefixGenerator);
+return sequence;
 }
-}
-2-2. Create POJOs by Invoking a Constructor
-Problem
-You want to create a POJO instance or bean in the Spring IoC container by invoking its constructor, which
-is the most common and direct way of creating beans. It is equivalent to using the new operator to create
-objects in Java.
-Solution
-Define a POJO class with a constructor or constructors. Next, create a Java config class to configure POJO
-instance values with constructors for the Spring IoC container. Next, instantiate the Spring IoC container to
-scan for Java classes with annotations. The POJO instances or bean instances become accessible to be put
-together as part of an application.
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+44
+The sequenceGenerator bean requires you to set a prefixGenerator bean. But notice no
+prefixGenerator bean is defined in the Java configuration class. The prefixGenerator bean is defined in
+a separate Java configuration class called PrefixConfiguration. With the @Import(PrefixConfiguration.
+class) annotation, Spring brings all the POJOs in the Java configuration class into the scope of the present
+configuration class. With the POJOs from PrefixConfiguration in scope, you use the @Value annotation
+and SpEL to inject the bean named datePrefixGenerator into the prefixGenerator field. Once the bean is
+injected, it can be used to set a prefixGenerator bean for the sequenceGenerator bean.

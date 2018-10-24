@@ -1,4 +1,4 @@
-package springrecipes.sequence;
+package springrecipes.ch02.sequence_ii;
 
 import org.springframework.stereotype.Component;
 
@@ -13,7 +13,7 @@ public class SequenceDaoImpl implements SequenceDao {
 
     public SequenceDaoImpl() {
         sequences.put("IT", new Sequence("IT", "30", "A"));
-        values.put("IT", new AtomicInteger(100000));
+        values.put("IT", new AtomicInteger(10000));
     }
 
     @Override
@@ -23,7 +23,7 @@ public class SequenceDaoImpl implements SequenceDao {
 
     @Override
     public int getNextValue(String sequenceId) {
-        AtomicInteger value = values.get(sequenceId);
-        return value.getAndIncrement();
+        AtomicInteger atomicInteger = values.get(sequenceId);
+        return atomicInteger.getAndIncrement();
     }
 }

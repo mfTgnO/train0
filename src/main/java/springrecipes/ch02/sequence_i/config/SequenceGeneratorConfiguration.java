@@ -1,4 +1,4 @@
-package springrecipes.sequence.config;
+package springrecipes.ch02.sequence_i.config;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
@@ -7,8 +7,8 @@ import org.springframework.context.annotation.FilterType;
         includeFilters = {
                 @ComponentScan.Filter(
                         type = FilterType.REGEX,
-                        pattern = {"springrecipes.sequence.*Dao",
-                                "springrecipes.sequence.*Service"})
+                        pattern = {"springrecipes.ch02.sequence_i.*Dao",
+                                "springrecipes.ch02.sequence_i.*Service"})
         },
         excludeFilters = {@ComponentScan.Filter(
                 type = FilterType.ANNOTATION,

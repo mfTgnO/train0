@@ -1,4 +1,4 @@
-package springrecipes.sequence;
+package springrecipes.ch02.sequence_i;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
