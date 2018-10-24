@@ -26,6 +26,4 @@ public class SequenceDaoImpl implements SequenceDao {
         AtomicInteger atomicInteger = values.get(sequenceId);
         return atomicInteger.getAndIncrement();
     }
-
-
 }
