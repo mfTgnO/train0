@@ -1,114 +1,56 @@
-2-5. Set a POJO’s Scope with the @Scope Annotation
-Problem
-When you declare a POJO instance with an annotation like @Component, you are actually defining a template
-for bean creation, not an actual bean instance. When a bean is requested by the getBean() method or
-referenced from other beans, Spring decides which bean instance should be returned according to the bean
-scope. Sometimes you have to set an appropriate scope for a bean other than the default scope.
-Solution
-A bean’s scope is set with the @Scope annotation. By default, Spring creates exactly one instance for each
-bean declared in the IoC container, and this instance is shared in the scope of the entire IoC container. This
-unique bean instance is returned for all subsequent getBean() calls and bean references. This scope is
-called singleton, which is the default scope of all beans. Table 2-1 lists all valid bean scopes in Spring.ChAPTeR 2 ■ SPRInG CORe TASkS
-47
-How It Works
-To demonstrate the concept of bean scope, let’s consider a shopping cart example in a shopping application.
-First, you create the ShoppingCart class as follows:
-package com.apress.springrecipes.shop;
-...
-@Component
-public class ShoppingCart {
-private List<Product> items = new ArrayList<>();
-public void addItem(Product item) {
-items.add(item);
-}
-public List<Product> getItems() {
-return items;
-}
-}
-Then, you declare some product beans in a Java config file so they can later be added to the shopping cart.
+Use Properties File Data to Set Up POJO Instantiation Values
+Let’s assume you have a series of values in a properties file you want to access to set up bean properties.
+Typically this can be the configuration properties of a database or some other application values composed
+of key values. For example, take the following key values stored in a file called discounts.properties:
+specialcustomer.discount=0.1
+summer.discount=0.15
+endofyear.discount=0.2
+■ Note To read properties files for the purpose of internationalization (i18n), see the next recipe.
+To make the contents of the discounts.properties file accessible to set up other beans, you can use the
+@PropertySource annotation to convert the key values into a bean inside a Java config class.
 package com.apress.springrecipes.shop.config;
 import com.apress.springrecipes.shop.Battery;
 import com.apress.springrecipes.shop.Disc;
 import com.apress.springrecipes.shop.Product;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 @Configuration
+@PropertySource("classpath:discounts.properties")
 @ComponentScan("com.apress.springrecipes.shop")
 public class ShopConfiguration {
-Table 2-1. Valid Bean Scopes in Spring
-Scope Description
-singleton Creates a single bean instance per Spring IoC container
-prototype Creates a new bean instance each time when requested
-request Creates a single bean instance per HTTP request; valid only in the context of a web
-application
-session Creates a single bean instance per HTTP session; valid only in the context of a web
-application
-globalSession Creates a single bean instance per global HTTP session; valid only in the context of a
-portal applicationChAPTeR 2 ■ SPRInG CORe TASkS
-48
+@Value("${endofyear.discount:0}")
+private double specialEndofyearDiscountField;ChAPTeR 2 ■ SPRInG CORe TASkS
+51
 @Bean
-public Product aaa() {
-Battery p1 = new Battery();
-p1.setName("AAA");
-p1.setPrice(2.5);
-p1.setRechargeable(true);
-return p1;
-}
-@Bean
-public Product cdrw() {
-Disc p2 = new Disc("CD-RW", 1.5);
-p2.setCapacity(700);
-return p2;
+public static PropertySourcesPlaceholderConfigurer
+propertySourcesPlaceholderConfigurer() {
+return new PropertySourcesPlaceholderConfigurer();
 }
 @Bean
 public Product dvdrw() {
-Disc p2 = new Disc("DVD-RW", 3.0);
+Disc p2 = new Disc("DVD-RW", 3.0, specialEndofyearDiscountField);
 p2.setCapacity(700);
 return p2;
 }
 }
-Once you do this, you can define a Main class to test the shopping cart by adding some products to it.
-Suppose there are two customers navigating in your shop at the same time. The first one gets a shopping cart
-by the getBean() method and adds two products to it. Then, the second customer also gets a shopping cart
-by the getBean() method and adds another product to it.
-package com.apress.springrecipes.shop;
-import com.apress.springrecipes.shop.config.ShopConfiguration;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-public class Main {
-public static void main(String[] args) throws Exception {
-ApplicationContext context =
-new AnnotationConfigApplicationContext(ShopConfiguration.class);
-Product aaa = context.getBean("aaa", Product.class);
-Product cdrw = context.getBean("cdrw", Product.class);
-Product dvdrw = context.getBean("dvdrw", Product.class);
-ShoppingCart cart1 = context.getBean("shoppingCart", ShoppingCart.class);
-cart1.addItem(aaa);
-cart1.addItem(cdrw);
-System.out.println("Shopping cart 1 contains " + cart1.getItems());ChAPTeR 2 ■ SPRInG CORe TASkS
-49
-ShoppingCart cart2 = context.getBean("shoppingCart", ShoppingCart.class);
-cart2.addItem(dvdrw);
-System.out.println("Shopping cart 2 contains " + cart2.getItems());
-}
-}
-As a result of the preceding bean declaration, you can see that the two customers get the same shopping
-cart instance.
-Shopping cart 1 contains [AAA 2.5, CD-RW 1.5]
-Shopping cart 2 contains [AAA 2.5, CD-RW 1.5, DVD-RW 3.0]
-This is because Spring’s default bean scope is singleton, which means Spring creates exactly one
-shopping cart instance per IoC container.
-In your shop application, you expect each customer to get a different shopping cart instance when the
-getBean() method is called. To ensure this behavior, the scope of the shoppingCart bean needs to be set to
-prototype. Then Spring creates a new bean instance for each getBean() method call.
-package com.apress.springrecipes.shop;
-...
-import org.springframework.stereotype.Component;
-import org.springframework.context.annotation.Scope;
-@Component
-@Scope("prototype")
-public class ShoppingCart { ... }
-Now if you run the Main class again, you can see the two customers get a different shopping cart instance.
-Shopping cart 1 contains [AAA 2.5, CD-RW 1.5]
-Shopping cart 2 contains [DVD-RW 3.0]
+You define a @PropertySource annotation with a value of classpath:discounts.properties to
+decorate the Java config class. The classpath: prefix tells Spring to look for the discounts.properties file
+in the Java classpath.
+Once you define the @PropertySource annotation to load the properties file, you also need to define a
+PropertySourcePlaceholderConfigurer bean with the @Bean annotation. Spring automatically wires the
+@PropertySource discounts.properties file so its properties become accessible as bean properties.
+Next, you need to define Java variables to take values from the discount discounts.properties file.
+To define the Java variable values with these values, you make use of the @Value annotation with a
+placeholder expression.
+The syntax is @Value("${key:default_value}"). A search is done for the key value in all the loaded
+application properties. If a matching key=value is found in the properties file, the corresponding value
+is assigned to the bean property. If no matching key=value is found in the loaded application properties,
+default_value (i.e., after ${key:) is assigned to the bean property.
+Once a Java variable is set with a discount value, you can use it to set up bean instances for a bean’s
+discount property.
+If you want to use properties file data for a different purpose than setting up bean properties, you should
+use Spring’s Resource mechanism, which is described next.
