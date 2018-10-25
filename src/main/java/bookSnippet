@@ -1,86 +1,114 @@
-2-4. Autowire POJOs with the @Resource and @Inject
-Annotations
+2-5. Set a POJO’s Scope with the @Scope Annotation
 Problem
-You want to use the Java standard @Resource and @Inject annotations to reference POJOs via autowiring,
-instead of using the Spring-specific @Autowired annotation.
+When you declare a POJO instance with an annotation like @Component, you are actually defining a template
+for bean creation, not an actual bean instance. When a bean is requested by the getBean() method or
+referenced from other beans, Spring decides which bean instance should be returned according to the bean
+scope. Sometimes you have to set an appropriate scope for a bean other than the default scope.
 Solution
-JSR-250, or Common Annotations for the Java Platform, defines the @Resource annotation to autowire POJO
-references by name. JSR-330, or Standard Annotations for Injection, defines the @Inject annotations to
-autowire POJO references by type.
+A bean’s scope is set with the @Scope annotation. By default, Spring creates exactly one instance for each
+bean declared in the IoC container, and this instance is shared in the scope of the entire IoC container. This
+unique bean instance is returned for all subsequent getBean() calls and bean references. This scope is
+called singleton, which is the default scope of all beans. Table 2-1 lists all valid bean scopes in Spring.ChAPTeR 2 ■ SPRInG CORe TASkS
+47
 How It Works
-The @Autowired annotation described in the previous recipe belongs to the Spring Framework, specifically
-to the org.springframework.beans.factory.annotation package. This means it can be used only in the
-context of the Spring Framework.
-Soon after Spring added support for the @Autowired annotation, the Java language standardized various
-annotations to fulfill the same purpose of the @Autowired annotation. These annotations are @Resource,
-which belongs to the javax.annotation package, and @Inject, which belongs to the javax.inject package.
-Autowire POJOs with the @Resource Annotation
-By default, the @Resource annotation works like Spring’s @Autowired annotation and attempts to autowire
-by type. For example, the following POJO attribute is decorated with the @Resource annotation, so Spring
-attempts to locate a POJO that matches the PrefixGenerator type.
-package com.apress.springrecipes.sequence;
-import javax.annotation.Resource;
-public class SequenceGenerator {
-@Resource
-private PrefixGenerator prefixGenerator;
+To demonstrate the concept of bean scope, let’s consider a shopping cart example in a shopping application.
+First, you create the ShoppingCart class as follows:
+package com.apress.springrecipes.shop;
 ...
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-45
-However, unlike the @Autowired annotation, which requires the @Qualifier annotation to autowire a
-POJO by name, the @Resource ambiguity is eliminated if more than one POJO type of the same kind exists.
-Essentially, the @Resource annotation provides the same functionality as putting together the @Autowired
-annotation and the @Qualifier annotation.
-Autowire POJOs with the @Inject Annotation
-Also, the @Inject annotation attempts to autowire by type, like the @Resource and @Autowired annotations.
-For example, the following POJO attribute is decorated with the @Inject annotation, so Spring attempts to
-locate a POJO that matches the PrefixGenerator type:
-package com.apress.springrecipes.sequence;
-import javax.inject.Inject;
-public class SequenceGenerator {
-@Inject
-private PrefixGenerator prefixGenerator;
-...
+@Component
+public class ShoppingCart {
+private List<Product> items = new ArrayList<>();
+public void addItem(Product item) {
+items.add(item);
 }
-But just like the @Resource and @Autowired annotations, a different approach has to be used to match
-POJOs by name or avoid ambiguity if more than one POJO type of the same kind exists. The first step to do
-autowiring by name with the @Inject annotation is to create a custom annotation to identify both the POJO
-injection class and the POJO injection point.
-package com.apress.springrecipes.sequence;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
-@Qualifier
-@Target({ElementType.TYPE, ElementType.FIELD, ElementType.PARAMETER})
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-public @interface DatePrefixAnnotation {
+public List<Product> getItems() {
+return items;
 }
-Notice the custom annotation makes use of the @Qualifier annotation. This annotation is different
-from the one used with Spring’s @Qualifier annotation, as this last class belongs to the same Java package
-as the @Inject annotation (i.e., javax.inject).ChAPTeR 2 ■ SPRInG CORe TASkS
-46
-Once the custom annotation is done, it’s necessary to decorate the POJO injection class that generates
-the bean instance, which in this case is the DatePrefixGenerator class.
-package com.apress.springrecipes.sequence;
-...
-@DatePrefixAnnotation
-public class DatePrefixGenerator implements PrefixGenerator {
-...
 }
-Finally, the POJO attribute or injection point is decorated with the same custom annotation to qualify
-the POJO and eliminate any ambiguity.
-package com.apress.springrecipes.sequence;
-import javax.inject.Inject;
-public class SequenceGenerator {
-@Inject @DataPrefixAnnotation
-private PrefixGenerator prefixGenerator;
-...
+Then, you declare some product beans in a Java config file so they can later be added to the shopping cart.
+package com.apress.springrecipes.shop.config;
+import com.apress.springrecipes.shop.Battery;
+import com.apress.springrecipes.shop.Disc;
+import com.apress.springrecipes.shop.Product;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+@Configuration
+@ComponentScan("com.apress.springrecipes.shop")
+public class ShopConfiguration {
+Table 2-1. Valid Bean Scopes in Spring
+Scope Description
+singleton Creates a single bean instance per Spring IoC container
+prototype Creates a new bean instance each time when requested
+request Creates a single bean instance per HTTP request; valid only in the context of a web
+application
+session Creates a single bean instance per HTTP session; valid only in the context of a web
+application
+globalSession Creates a single bean instance per global HTTP session; valid only in the context of a
+portal applicationChAPTeR 2 ■ SPRInG CORe TASkS
+48
+@Bean
+public Product aaa() {
+Battery p1 = new Battery();
+p1.setName("AAA");
+p1.setPrice(2.5);
+p1.setRechargeable(true);
+return p1;
 }
-As you’ve seen in recipes 2-3 and 2-4, the three annotations @Autowired, @Resource, and @Inject can
-achieve the same result. The @Autowired annotation is a Spring-based solution, whereas the @Resource and
-@Inject annotations are Java standard (i.e., JSR) solutions. If you’re going to do name-based autowiring,
-the @Resource annotation offers the simplest syntax. For autowiring by class type, all three annotations are
-straightforward to use because all three require a single annotation.
+@Bean
+public Product cdrw() {
+Disc p2 = new Disc("CD-RW", 1.5);
+p2.setCapacity(700);
+return p2;
+}
+@Bean
+public Product dvdrw() {
+Disc p2 = new Disc("DVD-RW", 3.0);
+p2.setCapacity(700);
+return p2;
+}
+}
+Once you do this, you can define a Main class to test the shopping cart by adding some products to it.
+Suppose there are two customers navigating in your shop at the same time. The first one gets a shopping cart
+by the getBean() method and adds two products to it. Then, the second customer also gets a shopping cart
+by the getBean() method and adds another product to it.
+package com.apress.springrecipes.shop;
+import com.apress.springrecipes.shop.config.ShopConfiguration;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+public class Main {
+public static void main(String[] args) throws Exception {
+ApplicationContext context =
+new AnnotationConfigApplicationContext(ShopConfiguration.class);
+Product aaa = context.getBean("aaa", Product.class);
+Product cdrw = context.getBean("cdrw", Product.class);
+Product dvdrw = context.getBean("dvdrw", Product.class);
+ShoppingCart cart1 = context.getBean("shoppingCart", ShoppingCart.class);
+cart1.addItem(aaa);
+cart1.addItem(cdrw);
+System.out.println("Shopping cart 1 contains " + cart1.getItems());ChAPTeR 2 ■ SPRInG CORe TASkS
+49
+ShoppingCart cart2 = context.getBean("shoppingCart", ShoppingCart.class);
+cart2.addItem(dvdrw);
+System.out.println("Shopping cart 2 contains " + cart2.getItems());
+}
+}
+As a result of the preceding bean declaration, you can see that the two customers get the same shopping
+cart instance.
+Shopping cart 1 contains [AAA 2.5, CD-RW 1.5]
+Shopping cart 2 contains [AAA 2.5, CD-RW 1.5, DVD-RW 3.0]
+This is because Spring’s default bean scope is singleton, which means Spring creates exactly one
+shopping cart instance per IoC container.
+In your shop application, you expect each customer to get a different shopping cart instance when the
+getBean() method is called. To ensure this behavior, the scope of the shoppingCart bean needs to be set to
+prototype. Then Spring creates a new bean instance for each getBean() method call.
+package com.apress.springrecipes.shop;
+...
+import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Scope;
+@Component
+@Scope("prototype")
+public class ShoppingCart { ... }
+Now if you run the Main class again, you can see the two customers get a different shopping cart instance.
+Shopping cart 1 contains [AAA 2.5, CD-RW 1.5]
+Shopping cart 2 contains [DVD-RW 3.0]

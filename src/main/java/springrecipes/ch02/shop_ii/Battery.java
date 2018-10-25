@@ -1,10 +1,9 @@
-package springrecipes.ch02.shop;
+package springrecipes.ch02.shop_ii;
 
 public class Battery extends Product {
     private boolean rechargeable;
 
     public Battery() {
-        super();
     }
 
     public Battery(String name, double price) {

@@ -1,4 +1,4 @@
-package springrecipes.ch02.shop;
+package springrecipes.ch02.shop_ii;
 
 public abstract class Product {
     private String name;

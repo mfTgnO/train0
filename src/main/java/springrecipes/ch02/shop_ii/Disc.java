@@ -1,10 +1,9 @@
-package springrecipes.ch02.shop;
+package springrecipes.ch02.shop_ii;
 
 public class Disc extends Product {
     private int capacity;
 
     public Disc() {
-        super();
     }
 
     public Disc(String name, double price) {
