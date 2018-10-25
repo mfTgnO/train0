@@ -33,7 +33,7 @@ public class ShopConfiguration {
     private Resource banner = new ClassPathResource("banner.txt");
 
     @Bean
-    public PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+    public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
         return new PropertySourcesPlaceholderConfigurer();
     }
 
