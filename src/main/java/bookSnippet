@@ -1,41 +1,86 @@
-Resolve POJO References from Multiple Locations
-As an application grows, it can become difficult to manage every POJO in a single Java configuration class.
-A common practice is to separate POJOs into multiple Java configuration classes according to their functionalities.
-When you create multiple Java configuration classes, obtaining references and autowiring POJOs that are defined
-in different classes isn’t as straightforward as when everything is in a single Java configuration class.
-One approach is to initialize the application context with the location of each Java configuration class.
-In this manner, the POJOs for each Java configuration class are loaded into the context and references, and
-autowiring between POJOs is possible.
-AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext
-(PrefixConfiguration.class, SequenceGeneratorConfiguration.class);
-Another alternative is to use the @Import annotation so Spring makes the POJOs from one configuration
-file available in another.
-package com.apress.springrecipes.sequence.config;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
-import com.apress.springrecipes.sequence.SequenceGenerator;
-import com.apress.springrecipes.sequence.PrefixGenerator;
-@Configuration
-@Import(PrefixConfiguration.class)
-public class SequenceConfiguration {
-@Value("#{datePrefixGenerator}")
+2-4. Autowire POJOs with the @Resource and @Inject
+Annotations
+Problem
+You want to use the Java standard @Resource and @Inject annotations to reference POJOs via autowiring,
+instead of using the Spring-specific @Autowired annotation.
+Solution
+JSR-250, or Common Annotations for the Java Platform, defines the @Resource annotation to autowire POJO
+references by name. JSR-330, or Standard Annotations for Injection, defines the @Inject annotations to
+autowire POJO references by type.
+How It Works
+The @Autowired annotation described in the previous recipe belongs to the Spring Framework, specifically
+to the org.springframework.beans.factory.annotation package. This means it can be used only in the
+context of the Spring Framework.
+Soon after Spring added support for the @Autowired annotation, the Java language standardized various
+annotations to fulfill the same purpose of the @Autowired annotation. These annotations are @Resource,
+which belongs to the javax.annotation package, and @Inject, which belongs to the javax.inject package.
+Autowire POJOs with the @Resource Annotation
+By default, the @Resource annotation works like Spring’s @Autowired annotation and attempts to autowire
+by type. For example, the following POJO attribute is decorated with the @Resource annotation, so Spring
+attempts to locate a POJO that matches the PrefixGenerator type.
+package com.apress.springrecipes.sequence;
+import javax.annotation.Resource;
+public class SequenceGenerator {
+@Resource
 private PrefixGenerator prefixGenerator;
-@Bean
-public SequenceGenerator sequenceGenerator() {
-SequenceGenerator sequence= new SequenceGenerator();
-sequence.setInitial(100000);
-sequence.setSuffix("A");
-sequence.setPrefixGenerator(prefixGenerator);
-return sequence;
-}
+...
 }ChAPTeR 2 ■ SPRInG CORe TASkS
-44
-The sequenceGenerator bean requires you to set a prefixGenerator bean. But notice no
-prefixGenerator bean is defined in the Java configuration class. The prefixGenerator bean is defined in
-a separate Java configuration class called PrefixConfiguration. With the @Import(PrefixConfiguration.
-class) annotation, Spring brings all the POJOs in the Java configuration class into the scope of the present
-configuration class. With the POJOs from PrefixConfiguration in scope, you use the @Value annotation
-and SpEL to inject the bean named datePrefixGenerator into the prefixGenerator field. Once the bean is
-injected, it can be used to set a prefixGenerator bean for the sequenceGenerator bean.
+45
+However, unlike the @Autowired annotation, which requires the @Qualifier annotation to autowire a
+POJO by name, the @Resource ambiguity is eliminated if more than one POJO type of the same kind exists.
+Essentially, the @Resource annotation provides the same functionality as putting together the @Autowired
+annotation and the @Qualifier annotation.
+Autowire POJOs with the @Inject Annotation
+Also, the @Inject annotation attempts to autowire by type, like the @Resource and @Autowired annotations.
+For example, the following POJO attribute is decorated with the @Inject annotation, so Spring attempts to
+locate a POJO that matches the PrefixGenerator type:
+package com.apress.springrecipes.sequence;
+import javax.inject.Inject;
+public class SequenceGenerator {
+@Inject
+private PrefixGenerator prefixGenerator;
+...
+}
+But just like the @Resource and @Autowired annotations, a different approach has to be used to match
+POJOs by name or avoid ambiguity if more than one POJO type of the same kind exists. The first step to do
+autowiring by name with the @Inject annotation is to create a custom annotation to identify both the POJO
+injection class and the POJO injection point.
+package com.apress.springrecipes.sequence;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+@Qualifier
+@Target({ElementType.TYPE, ElementType.FIELD, ElementType.PARAMETER})
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+public @interface DatePrefixAnnotation {
+}
+Notice the custom annotation makes use of the @Qualifier annotation. This annotation is different
+from the one used with Spring’s @Qualifier annotation, as this last class belongs to the same Java package
+as the @Inject annotation (i.e., javax.inject).ChAPTeR 2 ■ SPRInG CORe TASkS
+46
+Once the custom annotation is done, it’s necessary to decorate the POJO injection class that generates
+the bean instance, which in this case is the DatePrefixGenerator class.
+package com.apress.springrecipes.sequence;
+...
+@DatePrefixAnnotation
+public class DatePrefixGenerator implements PrefixGenerator {
+...
+}
+Finally, the POJO attribute or injection point is decorated with the same custom annotation to qualify
+the POJO and eliminate any ambiguity.
+package com.apress.springrecipes.sequence;
+import javax.inject.Inject;
+public class SequenceGenerator {
+@Inject @DataPrefixAnnotation
+private PrefixGenerator prefixGenerator;
+...
+}
+As you’ve seen in recipes 2-3 and 2-4, the three annotations @Autowired, @Resource, and @Inject can
+achieve the same result. The @Autowired annotation is a Spring-based solution, whereas the @Resource and
+@Inject annotations are Java standard (i.e., JSR) solutions. If you’re going to do name-based autowiring,
+the @Resource annotation offers the simplest syntax. For autowiring by class type, all three annotations are
+straightforward to use because all three require a single annotation.
