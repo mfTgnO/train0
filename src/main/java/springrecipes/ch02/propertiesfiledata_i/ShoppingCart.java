@@ -1,4 +1,4 @@
-package springrecipes.ch02.propertiesfiledata;
+package springrecipes.ch02.propertiesfiledata_i;
 
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;

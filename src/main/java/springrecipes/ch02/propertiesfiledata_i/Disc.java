@@ -1,4 +1,4 @@
-package springrecipes.ch02.propertiesfiledata;
+package springrecipes.ch02.propertiesfiledata_i;
 
 public class Disc extends Product {
     private int capacity;

@@ -1,56 +1,110 @@
-Use Properties File Data to Set Up POJO Instantiation Values
-Let’s assume you have a series of values in a properties file you want to access to set up bean properties.
-Typically this can be the configuration properties of a database or some other application values composed
-of key values. For example, take the following key values stored in a file called discounts.properties:
-specialcustomer.discount=0.1
-summer.discount=0.15
-endofyear.discount=0.2
-■ Note To read properties files for the purpose of internationalization (i18n), see the next recipe.
-To make the contents of the discounts.properties file accessible to set up other beans, you can use the
-@PropertySource annotation to convert the key values into a bean inside a Java config class.
-package com.apress.springrecipes.shop.config;
-import com.apress.springrecipes.shop.Battery;
-import com.apress.springrecipes.shop.Disc;
-import com.apress.springrecipes.shop.Product;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+Use Data from Any External Resource File for Use in a POJO
+Suppose you want to display a banner on application startup. The banner consists of the following
+characters and stored in a text file called banner.txt. This file can be put in the classpath of your application.
+*************************
+* Welcome to My Shop! *
+*************************
+Next, let’s write a BannerLoader POJO class to load the banner and output it to the console.
+package com.apress.springrecipes.shop;
+import org.springframework.core.io.Resource;
+...
+import javax.annotation.PostConstruct;
+public class BannerLoader {
+private Resource banner;ChAPTeR 2 ■ SPRInG CORe TASkS
+52
+public void setBanner(Resource banner) {
+this.banner = banner;
+}
+@PostConstruct
+public void showBanner() throws IOException {
+InputStream in = banner.getInputStream();
+BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+while (true) {
+String line = reader.readLine();
+if (line == null)
+break;
+System.out.println(line);
+}
+reader.close();
+}
+}
+Notice the POJO banner field is a Spring Resource type. The field value will be populated through setter
+injection when the bean instance is created—to be explained shortly. The showBanner() method makes a
+call to the getInputStream() method to retrieve the input stream from the Resource field. Once you have an
+InputStream, you’re able to use a standard Java file manipulation class. In this case, the file contents are read
+line by line with BufferedReader and output to the console.
+Also notice the showBanner() method is decorated with the @PostConstruct annotation. Because you
+want to show the banner at startup, you use this annotation to tell Spring to invoke the method automatically
+after creation. This guarantees the showBanner() method is one of the first methods to be run by the
+application and therefore ensures the banner appears at the outset.
+Next, the POJO BannerLoader needs to be initialized as an instance. In addition, the banner field of the
+BannerLoader also needs to be injected. So, let’s create a Java config class for these tasks.
 @Configuration
 @PropertySource("classpath:discounts.properties")
 @ComponentScan("com.apress.springrecipes.shop")
 public class ShopConfiguration {
-@Value("${endofyear.discount:0}")
-private double specialEndofyearDiscountField;ChAPTeR 2 ■ SPRInG CORe TASkS
-51
+@Value("classpath:banner.txt")
+private Resource banner;
 @Bean
-public static PropertySourcesPlaceholderConfigurer
-propertySourcesPlaceholderConfigurer() {
+public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
 return new PropertySourcesPlaceholderConfigurer();
 }
 @Bean
-public Product dvdrw() {
-Disc p2 = new Disc("DVD-RW", 3.0, specialEndofyearDiscountField);
-p2.setCapacity(700);
-return p2;
+public BannerLoader bannerLoader() {
+BannerLoader bl = new BannerLoader();
+bl.setBanner(banner);
+return bl;
 }
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+53
+See how the banner property is decorated with the @Value("classpath:banner.txt") annotation.
+This tells Spring to search for the banner.txt file in the classpath and inject it. Spring uses the preregistered
+property editor ResourceEditor to convert the file definition into a Resource object before injecting it into
+the bean.
+Once the banner property is injected, it’s assigned to the BannerLoader bean instance via setter injection.
+Because the banner file is located in the Java classpath, the resource path starts with the classpath:
+prefix. The previous resource path specifies a resource in the relative path of the file system. You can specify
+an absolute path as well.
+file:c:/shop/banner.txt
+When a resource is located in Java’s classpath, you have to use the classpath prefix. If there’s no path
+information presented, it will be loaded from the root of the classpath.
+classpath:banner.txt
+If the resource is located in a particular package, you can specify the absolute path from the
+classpath root.
+classpath:com/apress/springrecipes/shop/banner.txt
+Besides support to load from a file system path or the classpath, a resource can also be loaded by
+specifying a URL.
+http://springrecipes.apress.com/shop/banner.txt
+Since the bean class uses the @PostConstruct annotation on the showBanner() method, the
+banner is sent to output when the IoC container is set up. Because of this, there’s no need to tinker with
+an application’s context or explicitly call the bean to output the banner. However, sometimes it can be
+necessary to access an external resource to interact with an application’s context. Now suppose you want to
+display a legend at the end of an application. The legend consists of the discounts previously described in
+the discounts.properties file. To access the contents of the properties file, you can also leverage Spring’s
+Resource mechanism.
+Next, let’s use Spring’s Resource mechanism, but this time directly inside an application’s Main class to
+output a legend when the application finishes.
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
+...
+...
+public class Main {
+public static void main(String[] args) throws Exception {
+...
+Resource resource = new ClassPathResource("discounts.properties");
+Properties props = PropertiesLoaderUtils.loadProperties(resource);
+System.out.println("And don't forget our discounts!");
+System.out.println(props);
 }
-You define a @PropertySource annotation with a value of classpath:discounts.properties to
-decorate the Java config class. The classpath: prefix tells Spring to look for the discounts.properties file
-in the Java classpath.
-Once you define the @PropertySource annotation to load the properties file, you also need to define a
-PropertySourcePlaceholderConfigurer bean with the @Bean annotation. Spring automatically wires the
-@PropertySource discounts.properties file so its properties become accessible as bean properties.
-Next, you need to define Java variables to take values from the discount discounts.properties file.
-To define the Java variable values with these values, you make use of the @Value annotation with a
-placeholder expression.
-The syntax is @Value("${key:default_value}"). A search is done for the key value in all the loaded
-application properties. If a matching key=value is found in the properties file, the corresponding value
-is assigned to the bean property. If no matching key=value is found in the loaded application properties,
-default_value (i.e., after ${key:) is assigned to the bean property.
-Once a Java variable is set with a discount value, you can use it to set up bean instances for a bean’s
-discount property.
-If you want to use properties file data for a different purpose than setting up bean properties, you should
-use Spring’s Resource mechanism, which is described next.
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+54
+Spring’s ClassPathResource class is used to access the discounts.properties file, which casts the
+file’s contents into a Resource object. Next, the Resource object is processed into a Properties object with
+Spring’s PropertiesLoaderUtils class. Finally, the contents of the Properties object are sent to the console
+as the final output of the application.
+Because the legend file (i.e., discounts.properties) is located in the Java classpath, the resource is
+accessed with Spring’s ClassPathResource class. If the external resource were in a file system path, the
+resource would be loaded with Spring’s FileSystemResource.
+Resource resource = new FileSystemResource("c:/shop/banner.txt")
+If the external resource were at a URL, the resource would be loaded with Spring’s UrlResource.
+Resource resource = new UrlResource("http://www.apress.com/")

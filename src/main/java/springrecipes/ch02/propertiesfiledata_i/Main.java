@@ -1,7 +1,7 @@
-package springrecipes.ch02.propertiesfiledata;
+package springrecipes.ch02.propertiesfiledata_i;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import springrecipes.ch02.propertiesfiledata.config.ShopConfiguration;
+import springrecipes.ch02.propertiesfiledata_i.config.ShopConfiguration;
 
 public class Main {
     public static void main(String[] args) {

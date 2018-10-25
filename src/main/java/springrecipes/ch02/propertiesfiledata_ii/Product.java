@@ -1,4 +1,4 @@
-package springrecipes.ch02.propertiesfiledata;
+package springrecipes.ch02.propertiesfiledata_ii;
 
 public abstract class Product {
     private String name;
