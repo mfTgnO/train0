@@ -1,109 +1,196 @@
-2-9. Create Post-Processors to Validate and Modify POJOs
+2-10. Create POJOs with a Factory (Static Method, Instance
+Method, Spring’s FactoryBean)
 Problem
-You want to apply tasks to all bean instances or specific types of instances during construction to validate or
-modify bean properties according to particular criteria.
+You want to create a POJO instance in the Spring IoC container by invoking a static factory method or instance
+factory method. The purpose of this approach is to encapsulate the object-creation process either in a static
+method or in a method of another object instance, respectively. The client who requests an object can simply
+make a call to this method without knowing about the creation details. You want to create a POJO instance
+in the Spring IoC container using Spring’s factory bean. A factory bean is a bean that serves as a factory for
+creating other beans within the IoC container. Conceptually, a factory bean is similar to a factory method, but
+it’s a Spring-specific bean that can be identified by the Spring IoC container during bean construction.
 Solution
-A bean post-processor allows bean processing before and after the initialization callback method
-(i.e., the one assigned to the initMethod attribute of the @Bean annotation or the method decorated with
-the @PostConstruct annotation). The main characteristic of a bean post-processor is that it processes all
-the bean instances in the IoC container, not just a single bean instance. Typically, bean post-processors are
-used to check the validity of bean properties, alter bean properties according to particular criteria, or apply
-certain tasks to all bean instances.
-Spring also supports the @Required annotation, which is backed by the built-in Spring post-processor
-RequiredAnnotationBeanPostProcessor. The RequiredAnnotationBeanPostProcessor bean post-processor
-checks whether all the bean properties with the @Required annotation have been set.
+To create a POJO by invoking a static factory inside an @Bean definition of a Java configuration class, you
+use standard Java syntax to call the static factory method. To create a POJO by invoking an instance factory
+method inside an @Bean definition of a Java configuration class, you create a POJO to instantiate the factory
+values and another POJO to act as a façade to access the factory.
+As a convenience, Spring provides an abstract template class called AbstractFactoryBean to extend
+Spring’s FactoryBean interface.
 How It Works
-Suppose you want to audit the creation of every bean. You may want to do this to debug an application, to
-verify the properties of every bean, or in some other scenario. A bean post-processor is an ideal choice to
-implement this feature because you don’t have to modify any preexisting POJO code.
-Create POJO to Process Every Bean Instance
-To write a bean post-processor, a class has to implement BeanPostProcessor. When Spring detects
-a bean that implements this class, it applies the postProcessBeforeInitialization() and
-postProcessAfterInitialization() methods to all bean instances managed by Spring. You can implement
-any logic you want in these methods to either inspect, modify, or verify the status of a bean.
+You will explore the different ways of defining and using factory methods with Spring. First you will learn
+how to use a static factory method, next an instance based factory method and finally you will look at the
+Spring FactoryBean.
+Create POJOs by Invoking a Static Factory Method
+For example, you can write the following createProduct static factory method to create a product from a
+predefined product ID. According to the product ID, this method decides which concrete product class to
+instantiate. If there is no product matching this ID, it throws an IllegalArgumentException.
 package com.apress.springrecipes.shop;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.stereotype.Component;ChAPTeR 2 ■ SPRInG CORe TASkS
-62
-@Component
-public class AuditCheckBeanPostProcessor implements BeanPostProcessor {
-public Object postProcessBeforeInitialization(Object bean, String beanName)
-throws BeansException {
-System.out.println("In AuditCheckBeanPostProcessor.
-postProcessBeforeInitialization, processing bean type: " + bean.getClass());
-return bean;
+public class ProductCreator {
+public static Product createProduct(String productId) {
+if ("aaa".equals(productId)) {
+return new Battery("AAA", 2.5);
+} else if ("cdrw".equals(productId)) {
+return new Disc("CD-RW", 1.5);
+} else if ("dvdrw".equals(productId)) {
+return new Disc("DVD-RW", 3.0);
 }
-public Object postProcessAfterInitialization(Object bean, String beanName)
-throws BeansException {
-return bean;
+throw new IllegalArgumentException("Unknown product");
 }
-}
-Notice the postProcessBeforeInitialization() and postProcessAfterInitialization() methods
-must return the original bean instance even if you don’t do anything in the method.
-To register a bean post-processor in an application context, just annotate the class with the @Component
-annotation. The application context is able to detect which bean implements the BeanPostProcessor
-interface and register it to process all other bean instances in the container.
-Create a POJO to Process Selected Bean Instances
-During bean construction, the Spring IoC container passes all the bean instances to the bean post-processor
-one by one. This means if you want to apply a bean post-processor to only certain types of beans, you must
-filter the beans by checking their instance type. This allows you to apply logic more selectively across beans.
-Suppose you now want to apply a bean post-processor but just to Product bean instances. The following
-example is another bean post-processor that does this:
-package com.apress.springrecipes.shop;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.stereotype.Component;
-@Component
-public class ProductCheckBeanPostProcessor implements BeanPostProcessor {
-public Object postProcessBeforeInitialization(Object bean, String beanName)
-throws BeansException {
-if (bean instanceof Product) {
-String productName = ((Product) bean).getName();
-System.out.println("In ProductCheckBeanPostProcessor.
-postProcessBeforeInitialization, processing Product: " + productName);
-}
-return bean;
 }ChAPTeR 2 ■ SPRInG CORe TASkS
-63
-public Object postProcessAfterInitialization(Object bean, String beanName)
-throws BeansException {
-if (bean instanceof Product) {
-String productName = ((Product) bean).getName();
-System.out.println("In ProductCheckBeanPostProcessor.
-postProcessAfterInitialization, processing Product: " + productName);
+65
+To create a POJO with a static factory method inside an @Bean definition of a Java configuration class,
+you use regular Java syntax to call the factory method.
+package com.apress.springrecipes.shop.config;
+import com.apress.springrecipes.shop.Product;
+import com.apress.springrecipes.shop.ProductCreator;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+@Configuration
+public class ShopConfiguration {
+@Bean
+public Product aaa() {
+return ProductCreator.createProduct("aaa");
 }
-return bean;
+@Bean
+public Product cdrw() {
+return ProductCreator.createProduct("cdrw");
+}
+@Bean
+public Product dvdrw() {
+return ProductCreator.createProduct("dvdrw");
 }
 }
-Both the postProcessBeforeInitialization() and postProcessAfterInitialization() methods
-must return an instance of the bean being processed. However, this also means you can even replace the
-original bean instance with a new instance in your bean post-processor.
-Verify POJO Properties with the @Required Annotation
-In certain cases, it may be necessary to check whether particular properties have been set. Instead
-of creating of custom post-constructor to verify the particular properties of a bean, it’s possible to
-decorate a property with the @Required annotation. The @Required annotation provides access to the
-RequiredAnnotationBeanPostProcessor class—a Spring bean post-processor that can check whether
-certain bean properties have been set. Note that this processor can check only whether the properties have
-been set but can’t check whether their value is null or something else.
-Suppose that both the prefixGenerator and suffix properties are required for a sequence generator.
-You can annotate their setter methods with @Required.
-package com.apress.springrecipes.sequence;
-import org.springframework.beans.factory.annotation.Required;
-public class SequenceGenerator {
-private PrefixGenerator prefixGenerator;
-private String suffix;
+Create POJOs by Invoking an Instance Factory Method
+For example, you can write the following ProductCreator class by using a configurable map to store
+predefined products. The createProduct() instance factory method finds a product by looking up
+the supplied productId value in the map. If there is no product matching this ID, it will throw an
+IllegalArgumentException.
+package com.apress.springrecipes.shop;
 ...
-@Required
-public void setPrefixGenerator(PrefixGenerator prefixGenerator) {
-this.prefixGenerator = prefixGenerator;
+public class ProductCreator {
+private Map<String, Product> products;
+public void setProducts(Map<String, Product> products) {
+this.products = products;
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+66
+public Product createProduct(String productId) {
+Product product = products.get(productId);
+if (product != null) {
+return product;
 }
-@Required
-public void setSuffix(String suffix) {
-this.suffix = suffix;
+throw new IllegalArgumentException("Unknown product");
 }
-...
 }
-To ask Spring to check whether these properties have been set, you just need to enable scanning so
-Spring can detect and enforce the @Required annotation. If any properties with @Required have not been set,
-a BeanInitializationException error is thrown.
+To create products from this ProductCreator, you first declare an @Bean to instantiate the factory values.
+Next, you declare a second bean to act as a façade to access the factory. Finally, you can call the factory and
+execute the createProduct() method to instantiate other beans.
+package com.apress.springrecipes.shop.config;
+import com.apress.springrecipes.shop.Battery;
+import com.apress.springrecipes.shop.Disc;
+import com.apress.springrecipes.shop.Product;
+import com.apress.springrecipes.shop.ProductCreator;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import java.util.HashMap;
+import java.util.Map;
+@Configuration
+public class ShopConfiguration {
+@Bean
+public ProductCreator productCreatorFactory() {
+ProductCreator factory = new ProductCreator();
+Map<String, Product> products = new HashMap<>();
+products.put("aaa", new Battery("AAA", 2.5));
+products.put("cdrw", new Disc("CD-RW", 1.5));
+products.put("dvdrw", new Disc("DVD-RW", 3.0));
+factory.setProducts(products);
+return factory;
+}
+@Bean
+public Product aaa() {
+return productCreatorFactory().createProduct("aaa");
+}
+@Bean
+public Product cdrw() {
+return productCreatorFactory().createProduct("cdrw");
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+67
+@Bean
+public Product dvdrw() {
+return productCreatorFactory().createProduct("dvdrw");
+}
+}
+Create POJOs Using Spring’s Factory Bean
+Although you’ll seldom have to write custom factory beans, you may find it helpful to understand their
+internal mechanisms through an example. For example, you can write a factory bean for creating a product
+with a discount applied to the price. It accepts a product property and a discount property to apply the
+discount to the product and return it as a new bean.
+package com.apress.springrecipes.shop;
+import org.springframework.beans.factory.config.AbstractFactoryBean;
+public class DiscountFactoryBean extends AbstractFactoryBean<Product> {
+private Product product;
+private double discount;
+public void setProduct(Product product) {
+this.product = product;
+}
+public void setDiscount(double discount) {
+this.discount = discount;
+}
+public Class<?> getObjectType() {
+return product.getClass();
+}
+protected Product createInstance() throws Exception {
+product.setPrice(product.getPrice() * (1 - discount));
+return product;
+}
+}
+By extending the AbstractFactoryBean class, the factory bean can simply override the
+createInstance() method to create the target bean instance. In addition, you have to return the target
+bean’s type in the getObjectType() method for the autowiring feature to work properly.
+Next, you can declare product instances using a regular @Bean annotation to apply DiscountFactoryBean.
+package com.apress.springrecipes.shop.config;
+import com.apress.springrecipes.shop.Battery;
+import com.apress.springrecipes.shop.Disc;
+import com.apress.springrecipes.shop.DiscountFactoryBean;ChAPTeR 2 ■ SPRInG CORe TASkS
+68
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+@Configuration
+@ComponentScan("com.apress.springrecipes.shop")
+public class ShopConfiguration {
+@Bean
+public Battery aaa() {
+Battery aaa = new Battery("AAA", 2.5);
+return aaa;
+}
+@Bean
+public Disc cdrw() {
+Disc aaa = new Disc("CD-RW", 1.5);
+return aaa;
+}
+@Bean
+public Disc dvdrw() {
+Disc aaa = new Disc("DVD-RW", 3.0);
+return aaa;
+}
+@Bean
+public DiscountFactoryBean discountFactoryBeanAAA() {
+DiscountFactoryBean factory = new DiscountFactoryBean();
+factory.setProduct(aaa());
+factory.setDiscount(0.2);
+return factory;
+}
+@Bean
+public DiscountFactoryBean discountFactoryBeanCDRW() {
+DiscountFactoryBean factory = new DiscountFactoryBean();
+factory.setProduct(cdrw());
+factory.setDiscount(0.1);
+return factory;
+}
+@Bean
+public DiscountFactoryBean discountFactoryBeanDVDRW() {
+DiscountFactoryBean factory = new DiscountFactoryBean();
+factory.setProduct(dvdrw());
+factory.setDiscount(0.1);
+return factory;
+}
+}
