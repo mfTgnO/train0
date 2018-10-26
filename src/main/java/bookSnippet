@@ -1,110 +1,120 @@
-Use Data from Any External Resource File for Use in a POJO
-Suppose you want to display a banner on application startup. The banner consists of the following
-characters and stored in a text file called banner.txt. This file can be put in the classpath of your application.
-*************************
-* Welcome to My Shop! *
-*************************
-Next, let’s write a BannerLoader POJO class to load the banner and output it to the console.
+2-8. Customize POJO Initialization and Destruction with
+Annotations
+Problem
+Some POJOs have to perform certain types of initialization tasks before they’re used. These tasks can include
+opening a file, opening a network/database connection, allocating memory, and so on. In addition, these
+same POJOs have to perform the corresponding destruction tasks at the end of their life cycle. Therefore,
+sometimes it’s necessary to customize bean initialization and destruction in the Spring IoC container.ChAPTeR 2 ■ SPRInG CORe TASkS
+57
+Solution
+Spring can recognize initialization and destruction callback methods by setting the initMethod and
+destroyMethod attributes of the @Bean definition in a Java config class. Or Spring can also recognize
+initialization and destruction callback methods if POJO methods are decorated with the @PostConstruct
+and @PreDestroy annotations, respectively. Spring can also delay the creation of a bean up until the point
+it’s required—a process called lazy initialization—with the @Lazy annotation. Spring can also ensure the
+initialization of certain beans before others with the @DependsOn annotation.
+How It Works
+Define methods to run before POJO initialization and destruction with @Bean. Let’s take the case of the
+shopping application and consider an example involving a checkout function. Let’s modify the Cashier class
+to record a shopping cart’s products and the checkout time to a text file.
 package com.apress.springrecipes.shop;
-import org.springframework.core.io.Resource;
-...
-import javax.annotation.PostConstruct;
-public class BannerLoader {
-private Resource banner;ChAPTeR 2 ■ SPRInG CORe TASkS
-52
-public void setBanner(Resource banner) {
-this.banner = banner;
+import java.io.*;
+import java.util.Date;
+public class Cashier {
+private String fileName;
+private String path;
+private BufferedWriter writer;
+public void setFileName(String fileName) {
+this.fileName = fileName;
+}
+public void setPath(String path) {
+this.path = path;
+}
+public void openFile() throws IOException {
+File targetDir = new File(path);
+if (!targetDir.exists()) {
+targetDir.mkdir();
+}
+File checkoutFile = new File(path, fileName + ".txt");
+if (!checkoutFile.exists()) {
+checkoutFile.createNewFile();
+}
+writer = new BufferedWriter(new OutputStreamWriter(
+new FileOutputStream(checkoutFile, true)));
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+58
+public void checkout(ShoppingCart cart) throws IOException {
+writer.write(new Date() + "\t" + cart.getItems() + "\r\n");
+writer.flush();
+}
+public void closeFile() throws IOException {
+writer.close();
+}
+}
+In the Cashier class, the openFile() method first verifies whether the target directory and the file to
+write the data exists. It then opens the text file in the specified system path and assigns it to the writer field.
+Then each time the checkout() method is called, the date and cart items are appended to the text file.
+Finally, the closeFile() method closes the file to release its system resources.
+Next, let’s explore how this bean definition has to be set up in a Java config class to execute the
+openFile() method just before the bean is created and the closeFile() method just before it’s destroyed.
+@Configuration
+public class ShopConfiguration {
+@Bean(initMethod = "openFile", destroyMethod = "closeFile")
+public Cashier cashier() {
+String path = System.getProperty("java.io.tmpdir") + "/cashier";
+Cashier c1 = new Cashier();
+c1.setFileName("checkout");
+c1.setPath(path);
+return c1;
+}
+}
+Notice the POJO’s initialization and destruction tasks are defined with the initMethod and destroyMethod
+attributes of an @Bean annotation. With these two attributes set in the bean declaration, when the Cashier
+class is created, it first triggers the openFile() method, verifying whether the target directory and the file to
+write the data exist, as well as opening the file to append records. When the bean is destroyed, it triggers the
+closeFile() method, ensuring the file reference is closed to release system resources.
+Define Methods to Run Before POJO Initialization and Destruction with
+@PostConstruct and @PreDestroy
+Another alterative if you’re defining POJO instances outside a Java config class (e.g., with the @Component
+annotation) is to use the @PostConstruct and @PreDestroy annotations directly in the POJO class.
+@Component
+public class Cashier {
+@Value("checkout")
+private String fileName;
+@Value("c:/Windows/Temp/cashier")ChAPTeR 2 ■ SPRInG CORe TASkS
+59
+private String path;
+private BufferedWriter writer;
+public void setFileName(String fileName) {
+this.fileName = fileName;
+}
+public void setPath(String path) {
+this.path = path;
 }
 @PostConstruct
-public void showBanner() throws IOException {
-InputStream in = banner.getInputStream();
-BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-while (true) {
-String line = reader.readLine();
-if (line == null)
-break;
-System.out.println(line);
+public void openFile() throws IOException {
+File targetDir = new File(path);
+if (!targetDir.exists()) {
+targetDir.mkdir();
 }
-reader.close();
+File checkoutFile = new File(path, fileName + ".txt");
+if(!checkoutFile.exists()) {
+checkoutFile.createNewFile();
+}
+writer = new BufferedWriter(new OutputStreamWriter(
+new FileOutputStream(checkoutFile, true)));
+}
+public void checkout(ShoppingCart cart) throws IOException {
+writer.write(new Date() + "\t" +cart.getItems() + "\r\n");
+writer.flush();
+}
+@PreDestroy
+public void closeFile() throws IOException {
+writer.close();
 }
 }
-Notice the POJO banner field is a Spring Resource type. The field value will be populated through setter
-injection when the bean instance is created—to be explained shortly. The showBanner() method makes a
-call to the getInputStream() method to retrieve the input stream from the Resource field. Once you have an
-InputStream, you’re able to use a standard Java file manipulation class. In this case, the file contents are read
-line by line with BufferedReader and output to the console.
-Also notice the showBanner() method is decorated with the @PostConstruct annotation. Because you
-want to show the banner at startup, you use this annotation to tell Spring to invoke the method automatically
-after creation. This guarantees the showBanner() method is one of the first methods to be run by the
-application and therefore ensures the banner appears at the outset.
-Next, the POJO BannerLoader needs to be initialized as an instance. In addition, the banner field of the
-BannerLoader also needs to be injected. So, let’s create a Java config class for these tasks.
-@Configuration
-@PropertySource("classpath:discounts.properties")
-@ComponentScan("com.apress.springrecipes.shop")
-public class ShopConfiguration {
-@Value("classpath:banner.txt")
-private Resource banner;
-@Bean
-public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
-return new PropertySourcesPlaceholderConfigurer();
-}
-@Bean
-public BannerLoader bannerLoader() {
-BannerLoader bl = new BannerLoader();
-bl.setBanner(banner);
-return bl;
-}
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-53
-See how the banner property is decorated with the @Value("classpath:banner.txt") annotation.
-This tells Spring to search for the banner.txt file in the classpath and inject it. Spring uses the preregistered
-property editor ResourceEditor to convert the file definition into a Resource object before injecting it into
-the bean.
-Once the banner property is injected, it’s assigned to the BannerLoader bean instance via setter injection.
-Because the banner file is located in the Java classpath, the resource path starts with the classpath:
-prefix. The previous resource path specifies a resource in the relative path of the file system. You can specify
-an absolute path as well.
-file:c:/shop/banner.txt
-When a resource is located in Java’s classpath, you have to use the classpath prefix. If there’s no path
-information presented, it will be loaded from the root of the classpath.
-classpath:banner.txt
-If the resource is located in a particular package, you can specify the absolute path from the
-classpath root.
-classpath:com/apress/springrecipes/shop/banner.txt
-Besides support to load from a file system path or the classpath, a resource can also be loaded by
-specifying a URL.
-http://springrecipes.apress.com/shop/banner.txt
-Since the bean class uses the @PostConstruct annotation on the showBanner() method, the
-banner is sent to output when the IoC container is set up. Because of this, there’s no need to tinker with
-an application’s context or explicitly call the bean to output the banner. However, sometimes it can be
-necessary to access an external resource to interact with an application’s context. Now suppose you want to
-display a legend at the end of an application. The legend consists of the discounts previously described in
-the discounts.properties file. To access the contents of the properties file, you can also leverage Spring’s
-Resource mechanism.
-Next, let’s use Spring’s Resource mechanism, but this time directly inside an application’s Main class to
-output a legend when the application finishes.
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
-...
-...
-public class Main {
-public static void main(String[] args) throws Exception {
-...
-Resource resource = new ClassPathResource("discounts.properties");
-Properties props = PropertiesLoaderUtils.loadProperties(resource);
-System.out.println("And don't forget our discounts!");
-System.out.println(props);
-}
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-54
-Spring’s ClassPathResource class is used to access the discounts.properties file, which casts the
-file’s contents into a Resource object. Next, the Resource object is processed into a Properties object with
-Spring’s PropertiesLoaderUtils class. Finally, the contents of the Properties object are sent to the console
-as the final output of the application.
-Because the legend file (i.e., discounts.properties) is located in the Java classpath, the resource is
-accessed with Spring’s ClassPathResource class. If the external resource were in a file system path, the
-resource would be loaded with Spring’s FileSystemResource.
-Resource resource = new FileSystemResource("c:/shop/banner.txt")
-If the external resource were at a URL, the resource would be loaded with Spring’s UrlResource.
-Resource resource = new UrlResource("http://www.apress.com/")
+The @Component annotation tells Spring to manage the POJO, just like it’s been used in previous recipes.
+Two of the POJO fields’ values are set with the @Value annotation, a concept that was also explored in a
+previous recipe. The openFile() method is decorated with the @PostConstruct annotation, which tells
+Spring to execute the method right after a bean is constructed. The closeFile() method is decorated with
+the @PreDestroy annotation, which tells Spring to execute the method right before a bean is destroyed.
