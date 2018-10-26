@@ -1,196 +1,98 @@
-2-10. Create POJOs with a Factory (Static Method, Instance
-Method, Spring’s FactoryBean)
+2-11. Use Spring Environments and Profiles to Load
+Different Sets of POJOs
 Problem
-You want to create a POJO instance in the Spring IoC container by invoking a static factory method or instance
-factory method. The purpose of this approach is to encapsulate the object-creation process either in a static
-method or in a method of another object instance, respectively. The client who requests an object can simply
-make a call to this method without knowing about the creation details. You want to create a POJO instance
-in the Spring IoC container using Spring’s factory bean. A factory bean is a bean that serves as a factory for
-creating other beans within the IoC container. Conceptually, a factory bean is similar to a factory method, but
-it’s a Spring-specific bean that can be identified by the Spring IoC container during bean construction.
+You want to use the same set of POJO instances or beans but with different instantiation values for different
+application scenarios (e.g., production and development and testing).
 Solution
-To create a POJO by invoking a static factory inside an @Bean definition of a Java configuration class, you
-use standard Java syntax to call the static factory method. To create a POJO by invoking an instance factory
-method inside an @Bean definition of a Java configuration class, you create a POJO to instantiate the factory
-values and another POJO to act as a façade to access the factory.
-As a convenience, Spring provides an abstract template class called AbstractFactoryBean to extend
-Spring’s FactoryBean interface.
+Create multiple Java configuration classes and group POJOs instances or beans into each of these classes.
+Assign a profile name to the Java configuration class with the @Profile annotation based on the purpose
+of the group. Get the environment for an application’s context and set the profile to load a specific group of
+POJOs.
 How It Works
-You will explore the different ways of defining and using factory methods with Spring. First you will learn
-how to use a static factory method, next an instance based factory method and finally you will look at the
-Spring FactoryBean.
-Create POJOs by Invoking a Static Factory Method
-For example, you can write the following createProduct static factory method to create a product from a
-predefined product ID. According to the product ID, this method decides which concrete product class to
-instantiate. If there is no product matching this ID, it throws an IllegalArgumentException.
-package com.apress.springrecipes.shop;
-public class ProductCreator {
-public static Product createProduct(String productId) {
-if ("aaa".equals(productId)) {
-return new Battery("AAA", 2.5);
-} else if ("cdrw".equals(productId)) {
-return new Disc("CD-RW", 1.5);
-} else if ("dvdrw".equals(productId)) {
-return new Disc("DVD-RW", 3.0);
-}
-throw new IllegalArgumentException("Unknown product");
-}
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-65
-To create a POJO with a static factory method inside an @Bean definition of a Java configuration class,
-you use regular Java syntax to call the factory method.
+POJO instantiation values can vary depending on different application scenarios. For example, a common
+scenario can occur when an application goes from development to testing and on to production. In each of
+these scenarios, the properties for certain beans can vary slightly to accommodate environment changes
+(e.g., database username/password, file paths, etc.).
+You can create multiple Java configuration classes each with different POJOs (e.g.,
+ShopConfigurationGlobal, ShopConfigurationStr, and ShopConfigurationSumWin) and, in the application
+context, only load a given configuration class file based on the scenario.
+Create a Java Configuration Class with the @Profile Annotation
+Let’s create a multiple Java configuration class with an @Profile annotation for the shopping application
+presented in previous recipes.
 package com.apress.springrecipes.shop.config;
-import com.apress.springrecipes.shop.Product;
-import com.apress.springrecipes.shop.ProductCreator;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-@Configuration
-public class ShopConfiguration {
-@Bean
-public Product aaa() {
-return ProductCreator.createProduct("aaa");
-}
-@Bean
-public Product cdrw() {
-return ProductCreator.createProduct("cdrw");
-}
-@Bean
-public Product dvdrw() {
-return ProductCreator.createProduct("dvdrw");
-}
-}
-Create POJOs by Invoking an Instance Factory Method
-For example, you can write the following ProductCreator class by using a configurable map to store
-predefined products. The createProduct() instance factory method finds a product by looking up
-the supplied productId value in the map. If there is no product matching this ID, it will throw an
-IllegalArgumentException.
-package com.apress.springrecipes.shop;
-...
-public class ProductCreator {
-private Map<String, Product> products;
-public void setProducts(Map<String, Product> products) {
-this.products = products;
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-66
-public Product createProduct(String productId) {
-Product product = products.get(productId);
-if (product != null) {
-return product;
-}
-throw new IllegalArgumentException("Unknown product");
-}
-}
-To create products from this ProductCreator, you first declare an @Bean to instantiate the factory values.
-Next, you declare a second bean to act as a façade to access the factory. Finally, you can call the factory and
-execute the createProduct() method to instantiate other beans.
-package com.apress.springrecipes.shop.config;
-import com.apress.springrecipes.shop.Battery;
-import com.apress.springrecipes.shop.Disc;
-import com.apress.springrecipes.shop.Product;
-import com.apress.springrecipes.shop.ProductCreator;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import java.util.HashMap;
-import java.util.Map;
-@Configuration
-public class ShopConfiguration {
-@Bean
-public ProductCreator productCreatorFactory() {
-ProductCreator factory = new ProductCreator();
-Map<String, Product> products = new HashMap<>();
-products.put("aaa", new Battery("AAA", 2.5));
-products.put("cdrw", new Disc("CD-RW", 1.5));
-products.put("dvdrw", new Disc("DVD-RW", 3.0));
-factory.setProducts(products);
-return factory;
-}
-@Bean
-public Product aaa() {
-return productCreatorFactory().createProduct("aaa");
-}
-@Bean
-public Product cdrw() {
-return productCreatorFactory().createProduct("cdrw");
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-67
-@Bean
-public Product dvdrw() {
-return productCreatorFactory().createProduct("dvdrw");
-}
-}
-Create POJOs Using Spring’s Factory Bean
-Although you’ll seldom have to write custom factory beans, you may find it helpful to understand their
-internal mechanisms through an example. For example, you can write a factory bean for creating a product
-with a discount applied to the price. It accepts a product property and a discount property to apply the
-discount to the product and return it as a new bean.
-package com.apress.springrecipes.shop;
-import org.springframework.beans.factory.config.AbstractFactoryBean;
-public class DiscountFactoryBean extends AbstractFactoryBean<Product> {
-private Product product;
-private double discount;
-public void setProduct(Product product) {
-this.product = product;
-}
-public void setDiscount(double discount) {
-this.discount = discount;
-}
-public Class<?> getObjectType() {
-return product.getClass();
-}
-protected Product createInstance() throws Exception {
-product.setPrice(product.getPrice() * (1 - discount));
-return product;
-}
-}
-By extending the AbstractFactoryBean class, the factory bean can simply override the
-createInstance() method to create the target bean instance. In addition, you have to return the target
-bean’s type in the getObjectType() method for the autowiring feature to work properly.
-Next, you can declare product instances using a regular @Bean annotation to apply DiscountFactoryBean.
-package com.apress.springrecipes.shop.config;
-import com.apress.springrecipes.shop.Battery;
-import com.apress.springrecipes.shop.Disc;
-import com.apress.springrecipes.shop.DiscountFactoryBean;ChAPTeR 2 ■ SPRInG CORe TASkS
-68
+import com.apress.springrecipes.shop.Cashier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 @Configuration
+@Profile("global")
 @ComponentScan("com.apress.springrecipes.shop")
-public class ShopConfiguration {
+public class ShopConfigurationGlobal {
+@Bean(initMethod = "openFile", destroyMethod = "closeFile")
+public Cashier cashier() {
+final String path = System.getProperty("java.io.tmpdir") + "cashier";
+Cashier c1 = new Cashier();
+c1.setFileName("checkout");ChAPTeR 2 ■ SPRInG CORe TASkS
+70
+c1.setPath(path);
+return c1;
+}
+}
+package com.apress.springrecipes.shop.config;
+import com.apress.springrecipes.shop.Battery;
+import com.apress.springrecipes.shop.Disc;
+import com.apress.springrecipes.shop.Product;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+@Configuration
+@Profile({"summer", "winter"})
+public class ShopConfigurationSumWin {
 @Bean
-public Battery aaa() {
-Battery aaa = new Battery("AAA", 2.5);
-return aaa;
+public Product aaa() {
+Battery p1 = new Battery();
+p1.setName("AAA");
+p1.setPrice(2.0);
+p1.setRechargeable(true);
+return p1;
 }
 @Bean
-public Disc cdrw() {
-Disc aaa = new Disc("CD-RW", 1.5);
-return aaa;
+public Product cdrw() {
+Disc p2 = new Disc("CD-RW", 1.0);
+p2.setCapacity(700);
+return p2;
 }
 @Bean
-public Disc dvdrw() {
-Disc aaa = new Disc("DVD-RW", 3.0);
-return aaa;
-}
-@Bean
-public DiscountFactoryBean discountFactoryBeanAAA() {
-DiscountFactoryBean factory = new DiscountFactoryBean();
-factory.setProduct(aaa());
-factory.setDiscount(0.2);
-return factory;
-}
-@Bean
-public DiscountFactoryBean discountFactoryBeanCDRW() {
-DiscountFactoryBean factory = new DiscountFactoryBean();
-factory.setProduct(cdrw());
-factory.setDiscount(0.1);
-return factory;
-}
-@Bean
-public DiscountFactoryBean discountFactoryBeanDVDRW() {
-DiscountFactoryBean factory = new DiscountFactoryBean();
-factory.setProduct(dvdrw());
-factory.setDiscount(0.1);
-return factory;
+public Product dvdrw() {
+Disc p2 = new Disc("DVD-RW", 2.5);
+p2.setCapacity(700);
+return p2;
 }
 }
+The @Profile annotation decorates the entire Java configuration class, so all the @Bean instances
+belong to the same profile. To assign an @Profile name, you just place the name inside "". Notice it’s also
+possible to assign multiple @Profile names using a comma-separated value (CSV) syntax surrounded by {}
+(e.g., {"summer","winter"}).
+Load the Profile into Environment
+To load the beans from a certain profile into an application, you need to activate a profile. You can load
+multiple profiles at a time, and it’s also possible to load profiles programmatically, through a Java runtime
+flag or even as an initialization parameter of a WAR file.ChAPTeR 2 ■ SPRInG CORe TASkS
+71
+To load profiles programmatically (i.e., via the application context), you get the context environment
+from where you can load profiles via the setActiveProfiles() method.
+AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+context.getEnvironment().setActiveProfiles("global", "winter");
+context.scan("com.apress.springrecipes.shop");
+context.refresh();
+It’s also possible to indicate which Spring profile to load via a Java runtime flag. In this manner, you can
+pass the following runtime flag to load all beans that belong to the global and winter profiles:
+-Dspring.profiles.active=global,winter
+Set a Default Profile
+To avoid the possibility of errors because no profiles are loaded into an application, you can define default
+profiles. Default profiles are used only when Spring can’t detect any active profiles, which are defined
+programmatically, via a Java runtime flag, or with a web application initialization parameter.
+To set up default profiles, you can also use any of the three methods to set up active profiles.
+Programmatically you use the method setDefaultProfiles() instead of setActiveProfiles(), and via a
+Java runtime flag or web application initialization parameter, you can use the spring.profiles.default
+parameter instead of spring.profiles.active.
