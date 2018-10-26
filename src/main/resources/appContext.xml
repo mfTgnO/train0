@@ -4,5 +4,33 @@
        xmlns:context="http://www.springframework.org/schema/context"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
     <!--<context:component-scan base-package="springrecipes.ch02.sequence_vii.config"/>-->
-    <context:component-scan base-package="springrecipes.ch02.sequence_viii.config"/>
+    <!--<context:component-scan base-package="springrecipes.ch02.sequence_viii.config"/>-->
+    <!--<context:component-scan base-package="springrecipes.ch02.POJOinitializationdestruction_ii.config"/>-->
+    <!--<context:component-scan base-package="springrecipes.ch02.POJOinitializationdestruction_ii">
+        <context:include-filter type="regex"
+                                expression="springrecipes\.ch02\.POJOinitializationdestruction_ii\..*ShoppingCart.*"/>
+        <context:include-filter type="regex"
+                                expression="springrecipes\.ch02\.POJOinitializationdestruction_ii\..*Cashier.*"/>
+    </context:component-scan>-->
+    <!--<context:component-scan base-package="springrecipes.ch02.POJOinitializationdestruction_iii"/>-->
+    <!--<context:component-scan base-package="springrecipes.ch02.postprocessors_i">
+        <context:include-filter type="regex" expression="springrecipes\.ch02\.postprocessors_i\..*ShoppingCart*"/>
+    </context:component-scan>-->
+
+    <!--<context:component-scan base-package="springrecipes.ch02.postprocessors_ii.config"/>
+    <context:component-scan base-package="springrecipes.ch02.postprocessors_ii">
+        <context:include-filter type="regex" expression="springrecipes\.ch02\.postprocessors_ii\..*ShoppingCart*"/>
+    </context:component-scan>-->
+
+    <bean id="datePrefixGenerator" class="springrecipes.ch02.postprocessors_iii.DatePrefixGenerator">
+        <property name="pattern" value="yyyyMMdd"/>
+    </bean>
+
+    <bean id="sequenceGenerator" class="springrecipes.ch02.postprocessors_iii.SequenceGenerator">
+        <property name="suffix" value="A"/>
+        <property name="initial" value="100000"/>
+        <property name="prefixGenerator" ref="datePrefixGenerator"/>
+    </bean>
+
+    <context:component-scan base-package="springrecipes.ch02.postprocessors_iii"/>
 </beans>

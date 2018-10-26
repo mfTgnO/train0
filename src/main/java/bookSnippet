@@ -1,120 +1,109 @@
-2-8. Customize POJO Initialization and Destruction with
-Annotations
+2-9. Create Post-Processors to Validate and Modify POJOs
 Problem
-Some POJOs have to perform certain types of initialization tasks before they’re used. These tasks can include
-opening a file, opening a network/database connection, allocating memory, and so on. In addition, these
-same POJOs have to perform the corresponding destruction tasks at the end of their life cycle. Therefore,
-sometimes it’s necessary to customize bean initialization and destruction in the Spring IoC container.ChAPTeR 2 ■ SPRInG CORe TASkS
-57
+You want to apply tasks to all bean instances or specific types of instances during construction to validate or
+modify bean properties according to particular criteria.
 Solution
-Spring can recognize initialization and destruction callback methods by setting the initMethod and
-destroyMethod attributes of the @Bean definition in a Java config class. Or Spring can also recognize
-initialization and destruction callback methods if POJO methods are decorated with the @PostConstruct
-and @PreDestroy annotations, respectively. Spring can also delay the creation of a bean up until the point
-it’s required—a process called lazy initialization—with the @Lazy annotation. Spring can also ensure the
-initialization of certain beans before others with the @DependsOn annotation.
+A bean post-processor allows bean processing before and after the initialization callback method
+(i.e., the one assigned to the initMethod attribute of the @Bean annotation or the method decorated with
+the @PostConstruct annotation). The main characteristic of a bean post-processor is that it processes all
+the bean instances in the IoC container, not just a single bean instance. Typically, bean post-processors are
+used to check the validity of bean properties, alter bean properties according to particular criteria, or apply
+certain tasks to all bean instances.
+Spring also supports the @Required annotation, which is backed by the built-in Spring post-processor
+RequiredAnnotationBeanPostProcessor. The RequiredAnnotationBeanPostProcessor bean post-processor
+checks whether all the bean properties with the @Required annotation have been set.
 How It Works
-Define methods to run before POJO initialization and destruction with @Bean. Let’s take the case of the
-shopping application and consider an example involving a checkout function. Let’s modify the Cashier class
-to record a shopping cart’s products and the checkout time to a text file.
+Suppose you want to audit the creation of every bean. You may want to do this to debug an application, to
+verify the properties of every bean, or in some other scenario. A bean post-processor is an ideal choice to
+implement this feature because you don’t have to modify any preexisting POJO code.
+Create POJO to Process Every Bean Instance
+To write a bean post-processor, a class has to implement BeanPostProcessor. When Spring detects
+a bean that implements this class, it applies the postProcessBeforeInitialization() and
+postProcessAfterInitialization() methods to all bean instances managed by Spring. You can implement
+any logic you want in these methods to either inspect, modify, or verify the status of a bean.
 package com.apress.springrecipes.shop;
-import java.io.*;
-import java.util.Date;
-public class Cashier {
-private String fileName;
-private String path;
-private BufferedWriter writer;
-public void setFileName(String fileName) {
-this.fileName = fileName;
-}
-public void setPath(String path) {
-this.path = path;
-}
-public void openFile() throws IOException {
-File targetDir = new File(path);
-if (!targetDir.exists()) {
-targetDir.mkdir();
-}
-File checkoutFile = new File(path, fileName + ".txt");
-if (!checkoutFile.exists()) {
-checkoutFile.createNewFile();
-}
-writer = new BufferedWriter(new OutputStreamWriter(
-new FileOutputStream(checkoutFile, true)));
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-58
-public void checkout(ShoppingCart cart) throws IOException {
-writer.write(new Date() + "\t" + cart.getItems() + "\r\n");
-writer.flush();
-}
-public void closeFile() throws IOException {
-writer.close();
-}
-}
-In the Cashier class, the openFile() method first verifies whether the target directory and the file to
-write the data exists. It then opens the text file in the specified system path and assigns it to the writer field.
-Then each time the checkout() method is called, the date and cart items are appended to the text file.
-Finally, the closeFile() method closes the file to release its system resources.
-Next, let’s explore how this bean definition has to be set up in a Java config class to execute the
-openFile() method just before the bean is created and the closeFile() method just before it’s destroyed.
-@Configuration
-public class ShopConfiguration {
-@Bean(initMethod = "openFile", destroyMethod = "closeFile")
-public Cashier cashier() {
-String path = System.getProperty("java.io.tmpdir") + "/cashier";
-Cashier c1 = new Cashier();
-c1.setFileName("checkout");
-c1.setPath(path);
-return c1;
-}
-}
-Notice the POJO’s initialization and destruction tasks are defined with the initMethod and destroyMethod
-attributes of an @Bean annotation. With these two attributes set in the bean declaration, when the Cashier
-class is created, it first triggers the openFile() method, verifying whether the target directory and the file to
-write the data exist, as well as opening the file to append records. When the bean is destroyed, it triggers the
-closeFile() method, ensuring the file reference is closed to release system resources.
-Define Methods to Run Before POJO Initialization and Destruction with
-@PostConstruct and @PreDestroy
-Another alterative if you’re defining POJO instances outside a Java config class (e.g., with the @Component
-annotation) is to use the @PostConstruct and @PreDestroy annotations directly in the POJO class.
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.stereotype.Component;ChAPTeR 2 ■ SPRInG CORe TASkS
+62
 @Component
-public class Cashier {
-@Value("checkout")
-private String fileName;
-@Value("c:/Windows/Temp/cashier")ChAPTeR 2 ■ SPRInG CORe TASkS
-59
-private String path;
-private BufferedWriter writer;
-public void setFileName(String fileName) {
-this.fileName = fileName;
+public class AuditCheckBeanPostProcessor implements BeanPostProcessor {
+public Object postProcessBeforeInitialization(Object bean, String beanName)
+throws BeansException {
+System.out.println("In AuditCheckBeanPostProcessor.
+postProcessBeforeInitialization, processing bean type: " + bean.getClass());
+return bean;
 }
-public void setPath(String path) {
-this.path = path;
-}
-@PostConstruct
-public void openFile() throws IOException {
-File targetDir = new File(path);
-if (!targetDir.exists()) {
-targetDir.mkdir();
-}
-File checkoutFile = new File(path, fileName + ".txt");
-if(!checkoutFile.exists()) {
-checkoutFile.createNewFile();
-}
-writer = new BufferedWriter(new OutputStreamWriter(
-new FileOutputStream(checkoutFile, true)));
-}
-public void checkout(ShoppingCart cart) throws IOException {
-writer.write(new Date() + "\t" +cart.getItems() + "\r\n");
-writer.flush();
-}
-@PreDestroy
-public void closeFile() throws IOException {
-writer.close();
+public Object postProcessAfterInitialization(Object bean, String beanName)
+throws BeansException {
+return bean;
 }
 }
-The @Component annotation tells Spring to manage the POJO, just like it’s been used in previous recipes.
-Two of the POJO fields’ values are set with the @Value annotation, a concept that was also explored in a
-previous recipe. The openFile() method is decorated with the @PostConstruct annotation, which tells
-Spring to execute the method right after a bean is constructed. The closeFile() method is decorated with
-the @PreDestroy annotation, which tells Spring to execute the method right before a bean is destroyed.
+Notice the postProcessBeforeInitialization() and postProcessAfterInitialization() methods
+must return the original bean instance even if you don’t do anything in the method.
+To register a bean post-processor in an application context, just annotate the class with the @Component
+annotation. The application context is able to detect which bean implements the BeanPostProcessor
+interface and register it to process all other bean instances in the container.
+Create a POJO to Process Selected Bean Instances
+During bean construction, the Spring IoC container passes all the bean instances to the bean post-processor
+one by one. This means if you want to apply a bean post-processor to only certain types of beans, you must
+filter the beans by checking their instance type. This allows you to apply logic more selectively across beans.
+Suppose you now want to apply a bean post-processor but just to Product bean instances. The following
+example is another bean post-processor that does this:
+package com.apress.springrecipes.shop;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.stereotype.Component;
+@Component
+public class ProductCheckBeanPostProcessor implements BeanPostProcessor {
+public Object postProcessBeforeInitialization(Object bean, String beanName)
+throws BeansException {
+if (bean instanceof Product) {
+String productName = ((Product) bean).getName();
+System.out.println("In ProductCheckBeanPostProcessor.
+postProcessBeforeInitialization, processing Product: " + productName);
+}
+return bean;
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+63
+public Object postProcessAfterInitialization(Object bean, String beanName)
+throws BeansException {
+if (bean instanceof Product) {
+String productName = ((Product) bean).getName();
+System.out.println("In ProductCheckBeanPostProcessor.
+postProcessAfterInitialization, processing Product: " + productName);
+}
+return bean;
+}
+}
+Both the postProcessBeforeInitialization() and postProcessAfterInitialization() methods
+must return an instance of the bean being processed. However, this also means you can even replace the
+original bean instance with a new instance in your bean post-processor.
+Verify POJO Properties with the @Required Annotation
+In certain cases, it may be necessary to check whether particular properties have been set. Instead
+of creating of custom post-constructor to verify the particular properties of a bean, it’s possible to
+decorate a property with the @Required annotation. The @Required annotation provides access to the
+RequiredAnnotationBeanPostProcessor class—a Spring bean post-processor that can check whether
+certain bean properties have been set. Note that this processor can check only whether the properties have
+been set but can’t check whether their value is null or something else.
+Suppose that both the prefixGenerator and suffix properties are required for a sequence generator.
+You can annotate their setter methods with @Required.
+package com.apress.springrecipes.sequence;
+import org.springframework.beans.factory.annotation.Required;
+public class SequenceGenerator {
+private PrefixGenerator prefixGenerator;
+private String suffix;
+...
+@Required
+public void setPrefixGenerator(PrefixGenerator prefixGenerator) {
+this.prefixGenerator = prefixGenerator;
+}
+@Required
+public void setSuffix(String suffix) {
+this.suffix = suffix;
+}
+...
+}
+To ask Spring to check whether these properties have been set, you just need to enable scanning so
+Spring can detect and enforce the @Required annotation. If any properties with @Required have not been set,
+a BeanInitializationException error is thrown.
