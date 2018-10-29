@@ -1,172 +1,99 @@
-2-17. Write AspectJ Pointcut Expressions
+2-18. Use AOP for introductions for POJOs
 Problem
-Crosscutting concerns can happen at different program execution points called join points. Because of the
-variety of join points, you need a powerful expression language to help match them.
+Sometimes you may have a group of classes that share a common behavior. In OOP, they must extend the
+same base class or implement the same interface. This issue is actually a crosscutting concern that can be
+modularized with AOP. In addition, the single inheritance mechanism of Java only allows a class to extend one
+base class at most. So, you cannot inherit behaviors from multiple implementation classes at the same time.
 Solution
-The AspectJ pointcut language is a powerful expression language that can match various kinds of join points.
-However, Spring AOP only supports method execution join points for beans declared in its IoC container.
-For this reason, only those pointcut expressions supported by Spring AOP are presented in this recipe. For
-a full description of the AspectJ pointcut language, please refer to the AspectJ programming guide available
-on AspectJ’s web site (www.eclipse.org/aspectj/). Spring AOP makes use of the AspectJ pointcut language
-for its pointcut definition and interprets the pointcut expressions at runtime by using a library provided
-by AspectJ. When writing AspectJ pointcut expressions for Spring AOP, you must keep in mind that Spring
-AOP only supports method execution join points for the beans in its IoC container. If you use a pointcut
-expression out of this scope, an IllegalArgumentException is thrown.
+An introduction is a special type of advice in AOP. It allows objects to implement an interface dynamically by
+providing an implementation class for that interface. It seems as if objects extend an implementation class
+at runtime. Moreover, you are able to introduce multiple interfaces with multiple implementation classes to
+your objects at the same time. This can achieve the same effect as multiple inheritance.
 How It Works
-Lets explore the, by Spring, supported patterns for writing pointcut expression. First you will see how to write
-pointcuts based on message signatures, type patterns and how to use (and access) method arguments.
-Use Method Signature Patterns
-The most typical pointcut expressions are used to match a number of methods by their signatures.
-For example, the following pointcut expression matches all of the methods declared in the
-ArithmeticCalculator interface. The initial wildcard matches methods with any modifier (public,
-protected, and private) and any return type. The two dots in the argument list match any number of
-arguments.
-execution(* com.apress.springrecipes.calculator.ArithmeticCalculator.*(..))
-You can omit the package name if the target class or interface is located in the same package as the aspect.
-execution(* ArithmeticCalculator.*(..))
-The following pointcut expression matches all the public methods declared in the
-ArithmeticCalculator interface:
-execution(public * ArithmeticCalculator.*(..))
-You can also restrict the method return type. For example, the following pointcut matches the methods
-that return a double number:
-execution(public double ArithmeticCalculator.*(..))ChAPTeR 2 ■ SPRInG CORe TASkS
-88
-The argument list of the methods can also be restricted. For example, the following pointcut matches
-the methods whose first argument is of primitive double type. The two dots then match any number of
-followed arguments.
-execution(public double ArithmeticCalculator.*(double, ..))
-Or, you can specify all the argument types in the method signature for the pointcut to match.
-execution(public double ArithmeticCalculator.*(double, double))
-Although the AspectJ pointcut language is powerful in matching various join points, sometimes you
-may not be able to find any common characteristics (e.g., modifiers, return types, method name patterns,
-or arguments) for the methods you want to match. In such cases, you can consider providing a custom
-annotation for them. For instance, you can define the following marker annotation. This annotation can be
-applied to both method level and type level.
+Suppose you have two interfaces, MaxCalculator and MinCalculator, to define the max() and min()
+operations.
 package com.apress.springrecipes.calculator;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-@Target( { ElementType.METHOD, ElementType.TYPE })
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-public @interface LoggingRequired {
+public interface MaxCalculator {
+public double max(double a, double b);
 }
-Next, you can annotate all methods that require logging with this annotation or the class itself to apply
-the behavior to all methods. Note that the annotations must be added to the implementation class but not
-the interface, as they will not be inherited.
 package com.apress.springrecipes.calculator;
-@LoggingRequired
-public class ArithmeticCalculatorImpl implements ArithmeticCalculator {
-public double add(double a, double b) {
-...
+public interface MinCalculator {
+public double min(double a, double b);
 }
-public double sub(double a, double b) {
-...
+Then you have an implementation for each interface with println statements to let you know when the
+methods are executed.
+package com.apress.springrecipes.calculator;
+public class MaxCalculatorImpl implements MaxCalculator {
+public double max(double a, double b) {
+double result = (a >= b) ? a : b;
+System.out.println("max(" + a + ", " + b + ") = " + result);
+return result;
 }
-...
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-89
-Then you can write a pointcut expression to match a class or methods with the @LoggingRequired
-annotation using the annotation keyword on the @Pointcut annotation.
+}
+package com.apress.springrecipes.calculator;ChAPTeR 2 ■ SPRInG CORe TASkS
+93
+public class MinCalculatorImpl implements MinCalculator {
+public double min(double a, double b) {
+double result = (a <= b) ? a : b;
+System.out.println("min(" + a + ", " + b + ") = " + result);
+return result;
+}
+}
+Now, suppose you want ArithmeticCalculatorImpl to perform the max() and min() calculation also.
+As the Java language supports single inheritance only, it is not possible for the ArithmeticCalculatorImpl
+class to extend both the MaxCalculatorImpl and MinCalculatorImpl classes at the same time. The only
+possible way is to extend either class (e.g., MaxCalculatorImpl) and implement another interface (e.g.,
+MinCalculator), either by copying the implementation code or by delegating the handling to the actual
+implementation class. In either case, you have to repeat the method declarations.
+With an introduction, you can make ArithmeticCalculatorImpl dynamically implement both the
+MaxCalculator and MinCalculator interfaces by using the implementation classes MaxCalculatorImpl
+and MinCalculatorImpl. It has the same effect as multiple inheritance from MaxCalculatorImpl
+and MinCalculatorImpl. The idea behind an introduction is that you needn’t modify the
+ArithmeticCalculatorImpl class to introduce new methods. That means you can introduce methods to
+your existing classes even without source code available.
+■ Tip You may wonder how an introduction can do that in Spring AOP. The answer is a dynamic proxy.
+As you may recall, you can specify a group of interfaces for a dynamic proxy to implement. Introduction works
+by adding an interface (e.g., MaxCalculator) to the dynamic proxy. When the methods declared in this interface
+are called on the proxy object, the proxy will delegate the calls to the back-end implementation class
+(e.g., MaxCalculatorImpl).
+Introductions, like advices, must be declared within an aspect. You may create a new aspect or reuse an
+existing aspect for this purpose. In this aspect, you can declare an introduction by annotating an arbitrary
+field with the @DeclareParents annotation.
 package com.apress.springrecipes.calculator;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.annotation.DeclareParents;
+import org.springframework.stereotype.Component;
 @Aspect
-public class CalculatorPointcuts {
-@Pointcut("annotation(com.apress.springrecipes.calculator.LoggingRequired)")
-public void loggingOperation() {}
+@Component
+public class CalculatorIntroduction {
+@DeclareParents(
+value = "com.apress.springrecipes.calculator.ArithmeticCalculatorImpl",
+defaultImpl = MaxCalculatorImpl.class)
+public MaxCalculator maxCalculator;ChAPTeR 2 ■ SPRInG CORe TASkS
+94
+@DeclareParents(
+value = "com.apress.springrecipes.calculator.ArithmeticCalculatorImpl",
+defaultImpl = MinCalculatorImpl.class)
+public MinCalculator minCalculator;
 }
-Use Type Signature Patterns
-Another kind of pointcut expression matches all join points within certain types. When applied to Spring
-AOP, the scope of these pointcuts will be narrowed to matching all method executions within the types.
-For example, the following pointcut matches all the method execution join points within the com.apress.
-springrecipes.calculator package:
-within(com.apress.springrecipes.calculator.*)
-To match the join points within a package and its subpackage, you have to add one more dot before
-the wildcard.
-within(com.apress.springrecipes.calculator..*)
-The following pointcut expression matches the method execution join points within a particular class:
-within(com.apress.springrecipes.calculator.ArithmeticCalculatorImpl)
-Again, if the target class is located in the same package as this aspect, the package name can be omitted.
-within(ArithmeticCalculatorImpl)
-You can match the method execution join points within all classes that implement the
-ArithmeticCalculator interface by adding a plus symbol.
-within(ArithmeticCalculator+)
-The custom annotation @LoggingRequired can be applied to the class or method level, as illustrated
-previously.ChAPTeR 2 ■ SPRInG CORe TASkS
-90
+The value attribute of the @DeclareParents annotation type indicates which classes are the targets for
+this introduction. The interface to introduce is determined by the type of the annotated field. Finally, the
+implementation class used for this new interface is specified in the defaultImpl attribute.
+Through these two introductions, you can dynamically introduce a couple of interfaces to the
+ArithmeticCalculatorImpl class. Actually, you can specify an AspectJ type-matching expression in the
+value attribute of the @DeclareParents annotation to introduce an interface to multiple classes.
+As you have introduced both the MaxCalculator and MinCalculator interfaces to your arithmetic
+calculator, you can cast it to the corresponding interface to perform the max() and min() calculations.
 package com.apress.springrecipes.calculator;
-@LoggingRequired
-public class ArithmeticCalculatorImpl implements ArithmeticCalculator {
+public class Main {
+public static void main(String[] args) {
 ...
-}
-Then you can match the join points within the classes or methods that have been annotated with @
-LoggingRequired using the within keyword on the @Pointcut annotation.
-@Pointcut("within(com.apress.springrecipes.calculator.LoggingRequired)")
-public void loggingOperation() {}
-Combine Pointcut Expressions
-In AspectJ, pointcut expressions can be combined with the operators && (and), || (or), and ! (not).
-For example, the following pointcut matches the join points within classes that implement either the
-ArithmeticCalculator or UnitCalculator interface:
-within(ArithmeticCalculator+) || within(UnitCalculator+)
-The operands of these operators can be any pointcut expressions or references to other pointcuts.
-package com.apress.springrecipes.calculator;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
-@Aspect
-public class CalculatorPointcuts {
-@Pointcut("within(ArithmeticCalculator+)")
-public void arithmeticOperation() {}
-@Pointcut("within(UnitCalculator+)")
-public void unitOperation() {}
-@Pointcut("arithmeticOperation() || unitOperation()")
-public void loggingOperation() {}
-}
-Declare Pointcut Parameters
-One way to access join point information is by reflection (i.e., via an argument of type org.aspectj.lang.
-JoinPoint in the advice method). Besides, you can access join point information in a declarative way
-by using some kinds of special pointcut expressions. For example, the expressions target() and args()
-capture the target object and argument values of the current join point and expose them as pointcut
-parameters. These parameters are passed to your advice method via arguments of the same name.ChAPTeR 2 ■ SPRInG CORe TASkS
-91
-package com.apress.springrecipes.calculator;
+ArithmeticCalculator arithmeticCalculator =
+(ArithmeticCalculator) context.getBean("arithmeticCalculator");
 ...
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-@Aspect
-public class CalculatorLoggingAspect {
-...
-@Before("execution(* *.*(..)) && target(target) && args(a,b)")
-public void logParameter(Object target, double a, double b) {
-log.info("Target class : {}", target.getClass().getName());
-log.info("Arguments : {}, {}", a,b);
-}
-}
-When declaring an independent pointcut that exposes parameters, you have to include them in the
-argument list of the pointcut method as well.
-package com.apress.springrecipes.calculator;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
-@Aspect
-public class CalculatorPointcuts {
-...
-@Pointcut("execution(* *.*(..)) && target(target) && args(a,b)")
-public void parameterPointcut(Object target, double a, double b) {}
-}
-Any advice that refers to this parameterized pointcut can access the pointcut parameters via method
-arguments of the same name.
-package com.apress.springrecipes.calculator;
-...
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-@Aspect
-public class CalculatorLoggingAspect {
-...
-@Before("CalculatorPointcuts.parameterPointcut(target, a, b)")
-public void logParameter(Object target, double a, double b) {
-log.info("Target class : {}", target.getClass().getName());
-log.info("Arguments : {}, {}"a,b);
+MaxCalculator maxCalculator = (MaxCalculator) arithmeticCalculator;
+maxCalculator.max(1, 2);
+MinCalculator minCalculator = (MinCalculator) arithmeticCalculator;
+minCalculator.min(1, 2);
 }
 }
