@@ -1,4 +1,4 @@
-package skill.common.log;
+package skill.common.log.logging;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

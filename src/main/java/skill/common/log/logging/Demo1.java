@@ -1,4 +1,4 @@
-package skill.common.log;
+package skill.common.log.logging;
 
 import java.util.logging.Level;
 import java.util.logging.LogManager;

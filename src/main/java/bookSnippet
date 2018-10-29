@@ -97,7 +97,7 @@ import org.springframework.stereotype.Component;ChAPTeR 2 ■ SPRInG CORe TASkS
 @Component
 public class CalculatorLoggingAspect {
 private Log log = LogFactory.getLog(this.getClass());
-@Before("execution(* ArithmeticCalculator.add(..))")
+@Before("execution(* ArithmeticCalculator.add(..))")A
 public void logBefore() {
 log.info("The method add() begins");
 }
