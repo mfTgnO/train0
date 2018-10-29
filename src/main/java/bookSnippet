@@ -1,326 +1,80 @@
-2-13. Use Aspect-Oriented Programming with Annotations
+2-16. Reuse Aspect Pointcut Definitions
 Problem
-You want to use aspect-oriented programming with Spring and annotations.
+When writing aspects, you can directly embed a pointcut expression in an advice annotation. You want to
+use the same pointcut expression in multiple advices without embedding it multiple times.
 Solution
-You define an aspect by decorating a Java class with the @Aspect annotation. Each of the methods in a class can
-become an advice with another annotation. You can use five types of advice annotations: @Before, @After,
-@AfterReturning, @AfterThrowing, and @Around.
-To enable annotation support in the Spring IoC container, you have to add @EnableAspectJAutoProxy
-to one of your configuration classes. To apply AOP, Spring creates proxies, and by default it creates JDK
-dynamic proxies, which are interface-based. For cases in which interfaces are not available or not used in an
-application’s design, it’s possible to create proxies by relying on CGLIB. To enable CGLIB, you need to set the
-attribute proxyTargetClass=true on the @EnableAspectJAutoProxy annotation.ChAPTeR 2 ■ SPRInG CORe TASkS
-74
+You can use the @Pointcut annotation to define a pointcut independently to be reused in multiple advices.
 How It Works
-To support aspect-oriented programming with annotations, Spring uses the same annotations as AspectJ,
-using a library supplied by AspectJ for pointcut parsing and matching. However, the AOP runtime is still
-pure Spring AOP, and there is no dependency on the AspectJ compiler or weaver.
-To illustrate the enablement of aspect-oriented programming with annotations, you’ll use the following
-calculator interfaces to define a set of sample POJOs:
-package com.apress.springrecipes.calculator;
-public interface ArithmeticCalculator {
-public double add(double a, double b);
-public double sub(double a, double b);
-public double mul(double a, double b);
-public double div(double a, double b);
-}
-package com.apress.springrecipes.calculator;
-public interface UnitCalculator {
-public double kilogramToPound(double kilogram);
-public double kilometerToMile(double kilometer);
-}
-Next, let’s create POJO classes for each interface with println statements to know when each method is
-executed:
-package com.apress.springrecipes.calculator;
-import org.springframework.stereotype.Component;
-@Component("arithmeticCalculator")
-public class ArithmeticCalculatorImpl implements ArithmeticCalculator {
-public double add(double a, double b) {
-double result = a + b;
-System.out.println(a + " + " + b + " = " + result);
-return result;
-}
-public double sub(double a, double b) {
-double result = a - b;
-System.out.println(a + " - " + b + " = " + result);
-return result;
-}
-public double mul(double a, double b) {
-double result = a * b;
-System.out.println(a + " * " + b + " = " + result);
-return result;
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-75
-public double div(double a, double b) {
-if (b == 0) {
-throw new IllegalArgumentException("Division by zero");
-}
-double result = a / b;
-System.out.println(a + " / " + b + " = " + result);
-return result;
-}
-}
-package com.apress.springrecipes.calculator;
-import org.springframework.stereotype.Component;
-@Component("unitCalculator")
-public class UnitCalculatorImpl implements UnitCalculator {
-public double kilogramToPound(double kilogram) {
-double pound = kilogram * 2.2;
-System.out.println(kilogram + " kilogram = " + pound + " pound");
-return pound;
-}
-public double kilometerToMile(double kilometer) {
-double mile = kilometer * 0.62;
-System.out.println(kilometer + " kilometer = " + mile + " mile");
-return mile;
-}
-}
-Note that each POJO implementation is decorated with the @Component annotation to create bean instances.
-Declare Aspects, Advices, and Pointcuts
-An aspect is a Java class that modularizes a set of concerns (e.g., logging or transaction management) that
-cuts across multiple types and objects. Java classes that modularize such concerns are decorated with the
-@Aspect annotation. In AOP terminology, aspects are also complemented by advices, which in themselves
-have pointcuts. An advice is a simple Java method with one of the advice annotations. AspectJ supports five
-types of advice annotations: @Before, @After, @AfterReturning, @AfterThrowing, and @Around. A pointcut
-is an expression that looks for types and objects on which to apply the aspect’s advices.
-Aspect with @Before Advice
-To create a before advice to handle crosscutting concerns before particular program execution points, you
-use the @Before annotation and include the pointcut expression as the annotation value.
-package com.apress.springrecipes.calculator;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.springframework.stereotype.Component;ChAPTeR 2 ■ SPRInG CORe TASkS
-76
-@Aspect
-@Component
-public class CalculatorLoggingAspect {
-private Log log = LogFactory.getLog(this.getClass());
-@Before("execution(* ArithmeticCalculator.add(..))")A
-public void logBefore() {
-log.info("The method add() begins");
-}
-}
-This pointcut expression matches the add() method execution of the ArithmeticCalculator interface.
-The preceding wildcard in this expression matches any modifier (public, protected, and private) and any
-return type. The two dots in the argument list match any number of arguments.
-For the previous aspect to work (i.e., output its message), you need to set up logging. Specifically, create
-a logback.xml file with configuration properties like the following.
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-<layout class="ch.qos.logback.classic.PatternLayout">
-<Pattern>%d [%15.15t] %-5p %30.30c - %m%n</Pattern>
-</layout>
-</appender>
-<root level="INFO">
-<appender-ref ref="STDOUT" />
-</root>
-</configuration>
-■ Note The @Aspect annotation is not sufficient for autodetection in the classpath. Therefore, you need to
-add a separate @Component annotation for the POJO to be detected.
-Next, you create a Spring configuration to scan all POJOs, including the POJO calculator
-implementation and aspect and including the @EnableAspectJAutoProxy annotation.
-@Configuration
-@EnableAspectJAutoProxy
-@ComponentScan
-public class CalculatorConfiguration {
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-77
-As the last step, you can test the aspect with the following Main class:
-package com.apress.springrecipes.calculator;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-public class Main {
-public static void main(String[] args) {
-ApplicationContext context =
-new AnnotationConfigApplicationContext(CalculatorConfiguration.class);
-ArithmeticCalculator arithmeticCalculator =
-context.getBean("arithmeticCalculator", ArithmeticCalculator.class);
-arithmeticCalculator.add(1, 2);
-arithmeticCalculator.sub(4, 3);
-arithmeticCalculator.mul(2, 3);
-arithmeticCalculator.div(4, 2);
-UnitCalculator unitCalculator = context.getBean("unitCalculator", UnitCalculator.class);
-unitCalculator.kilogramToPound(10);
-unitCalculator.kilometerToMile(5);
-}
-}
-The execution points matched by a pointcut are called join points. In this term, a pointcut is an
-expression to match a set of join points, while an advice is the action to take at a particular join point.
-For your advice to access the detail of the current join point, you can declare an argument of type
-JoinPoint in your advice method. Then, you can get access to join point details such as the method name
-and argument values. Now, you can expand your pointcut to match all methods by changing the class name
-and method name to wildcards.
+In an aspect, a pointcut can be declared as a simple method with the @Pointcut annotation. The method
+body of a pointcut is usually empty because it is unreasonable to mix a pointcut definition with application
+logic. The access modifier of a pointcut method controls the visibility of this pointcut as well. Other advices
+can refer to this pointcut by the method name.
 package com.apress.springrecipes.calculator;
 ...
-import java.util.Arrays;
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.Pointcut;
 @Aspect
 @Component
 public class CalculatorLoggingAspect {
 ...
-@Before("execution(* *.*(..))")
+@Pointcut("execution(* *.*(..))")
+private void loggingOperation() {}
+@Before("loggingOperation()")
 public void logBefore(JoinPoint joinPoint) {
-log.info("The method " + joinPoint.getSignature().getName()
-+ "() begins with " + Arrays.toString(joinPoint.getArgs()));
+...
 }
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-78
-Use an Aspect with @After Advice
-An after advice is executed after a join point finishes and is represented by a method annotated with @After,
-whenever it returns a result or throws an exception. The following after advice logs the calculator method
-ending:
-package com.apress.springrecipes.calculator;
-...
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.After;
-import org.aspectj.lang.annotation.Aspect;
-@Aspect
-public class CalculatorLoggingAspect {
-...
-@After("execution(* *.*(..))")
-public void logAfter(JoinPoint joinPoint) {
-log.info("The method " + joinPoint.getSignature().getName()
-+ "() ends");
-}
-}
-Use an Aspect with @AfterReturning Advice
-An after advice is executed regardless of whether a join point returns normally or throws an exception. If you
-would like to perform logging only when a join point returns, you should replace the after advice with an
-after returning advice.
-package com.apress.springrecipes.calculator;
-...
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.Aspect;
-@Aspect
-public class CalculatorLoggingAspect {
-...
-@AfterReturning("execution(* *.*(..))")
-public void logAfterReturning(JoinPoint joinPoint) {
-log.info("The method {}() ends with {}", joinPoint.getSignature().getName(), result);
-}
-}
-In an after returning advice, you can get access to the return value of a join point by adding a returning
-attribute to the @AfterReturning annotation. The value of this attribute should be the argument name of
-this advice method for the return value to pass in. Then, you have to add an argument to the advice method
-signature with this name. At runtime, Spring AOP will pass in the return value through this argument. Also
-note that the original pointcut expression needs to be presented in the pointcut attribute instead.ChAPTeR 2 ■ SPRInG CORe TASkS
-79
-package com.apress.springrecipes.calculator;
-...
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.Aspect;
-@Aspect
-public class CalculatorLoggingAspect {
-...
 @AfterReturning(
-pointcut = "execution(* *.*(..))",
+pointcut = "loggingOperation()",
 returning = "result")
 public void logAfterReturning(JoinPoint joinPoint, Object result) {
-log.info("The method " + joinPoint.getSignature().getName()
-+ "() ends with " + result);
-}
-}
-Use an Aspect with @AfterThrowing Advice
-An after throwing advice is executed only when an exception is thrown by a join point.
-package com.apress.springrecipes.calculator;
 ...
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterThrowing;
-import org.aspectj.lang.annotation.Aspect;
-@Aspect
-public class CalculatorLoggingAspect {
-...
-@AfterThrowing("execution(* *.*(..))")
-public void logAfterThrowing(JoinPoint joinPoint) {
-log.error("An exception has been thrown in {}()", joinPoint.getSignature().getName());
 }
-}
-Similarly, the exception thrown by the join point can be accessed by adding a throwing attribute to the
-@AfterThrowing annotation. The type Throwable is the superclass of all errors and exceptions in the Java
-language. So, the following advice will catch any of the errors and exceptions thrown by the join points:
-package com.apress.springrecipes.calculator;
-...
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterThrowing;
-import org.aspectj.lang.annotation.Aspect;ChAPTeR 2 ■ SPRInG CORe TASkS
-80
-@Aspect
-public class CalculatorLoggingAspect {
-...
 @AfterThrowing(
-pointcut = "execution(* *.*(..))",
-throwing = "e")
-public void logAfterThrowing(JoinPoint joinPoint, Throwable e) {
-log.error("An exception {} has been thrown in {}()", e, joinPoint.getSignature().
-getName());
-}
-}
-However, if you are interested in one particular type of exception only, you can declare it as the
-argument type of the exception. Then your advice will be executed only when exceptions of compatible
-types (i.e., this type and its subtypes) are thrown.
-package com.apress.springrecipes.calculator;
-...
-import java.util.Arrays;
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterThrowing;
-import org.aspectj.lang.annotation.Aspect;
-@Aspect
-public class CalculatorLoggingAspect {
-...
-@AfterThrowing(
-pointcut = "execution(* *.*(..))",
+pointcut = "loggingOperation()",
 throwing = "e")
 public void logAfterThrowing(JoinPoint joinPoint, IllegalArgumentException e) {
-log.error("Illegal argument {} in {}()", Arrays.toString(joinPoint.getArgs()),
-joinPoint.getSignature().getName());
-}
-}
-Use an Aspect with @Around Advice
-The last type of advice is an around advice. It is the most powerful of all the advice types. It gains full control
-of a join point, so you can combine all the actions of the preceding advices into one single advice. You can
-even control when, and whether, to proceed with the original join point execution.
-The following around advice is the combination of the before, after returning, and after throwing
-advices you created earlier. Note that for an around advice, the argument type of the join point must be
-ProceedingJoinPoint. It’s a subinterface of JoinPoint that allows you to control when to proceed with the
-original join point.
-package com.apress.springrecipes.calculator;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;ChAPTeR 2 ■ SPRInG CORe TASkS
-81
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import java.util.Arrays;
-@Aspect
-@Component
-public class CalculatorLoggingAspect {
-private Logger log = LoggerFactory.getLogger(this.getClass());
-@Around("execution(* *.*(..))")
+...
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+86
+@Around("loggingOperation()")
 public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
-log.info("The method {}() begins with {}", joinPoint.getSignature().getName(),
-Arrays.toString(joinPoint.getArgs()));
-try {
-Object result = joinPoint.proceed();
-log.info("The method {}() ends with ", joinPoint.getSignature().getName(),
-result);
-return result;
-} catch (IllegalArgumentException e) {
-log.error("Illegal argument {} in {}()", Arrays.toString(joinPoint.getArgs()) ,
-joinPoint.getSignature().getName());
-throw e;
+...
 }
 }
+Usually, if your pointcuts are shared between multiple aspects, it is better to centralize them in a
+common class. In this case, they must be declared as public.
+package com.apress.springrecipes.calculator;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
+@Aspect
+public class CalculatorPointcuts {
+@Pointcut("execution(* *.*(..))")
+public void loggingOperation() {}
 }
-The around advice type is powerful and flexible in that you can even alter the original argument values
-and change the final return value. You must use this type of advice with great care, as the call to proceed with
-the original join point may easily be forgotten.
-■ Tip A common rule for choosing an advice type is to use the least powerful one that can satisfy your
-requirements.
+When you refer to this pointcut, you have to include the class name as well. If the class is not located in
+the same package as the aspect, you have to include the package name also.
+package com.apress.springrecipes.calculator;
+...
+@Aspect
+public class CalculatorLoggingAspect {
+...
+@Before("CalculatorPointcuts.loggingOperation()")
+public void logBefore(JoinPoint joinPoint) {
+...
+}
+@AfterReturning(
+pointcut = "CalculatorPointcuts.loggingOperation()",
+returning = "result")
+public void logAfterReturning(JoinPoint joinPoint, Object result) {
+...
+}
+@AfterThrowing(
+pointcut = "CalculatorPointcuts.loggingOperation()",
+throwing = "e")
+public void logAfterThrowing(JoinPoint joinPoint, IllegalArgumentException e) {
+...
+}
+@Around("CalculatorPointcuts.loggingOperation()")
+public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
+...
+}
+}

@@ -2,7 +2,8 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
     <!--<context:component-scan base-package="springrecipes.ch02.sequence_vii.config"/>-->
     <!--<context:component-scan base-package="springrecipes.ch02.sequence_viii.config"/>-->
     <!--<context:component-scan base-package="springrecipes.ch02.POJOinitializationdestruction_ii.config"/>-->
@@ -22,15 +23,17 @@
         <context:include-filter type="regex" expression="springrecipes\.ch02\.postprocessors_ii\..*ShoppingCart*"/>
     </context:component-scan>-->
 
-    <bean id="datePrefixGenerator" class="springrecipes.ch02.postprocessors_iii.DatePrefixGenerator">
+    <!--springrecipes.ch02.postprocessors_iii-->
+    <!--<bean id="datePrefixGenerator" class="springrecipes.ch02.postprocessors_iii.DatePrefixGenerator">
         <property name="pattern" value="yyyyMMdd"/>
     </bean>
-
     <bean id="sequenceGenerator" class="springrecipes.ch02.postprocessors_iii.SequenceGenerator">
         <property name="suffix" value="A"/>
         <property name="initial" value="100000"/>
         <property name="prefixGenerator" ref="datePrefixGenerator"/>
     </bean>
+    <context:component-scan base-package="springrecipes.ch02.postprocessors_iii"/>-->
 
-    <context:component-scan base-package="springrecipes.ch02.postprocessors_iii"/>
+    <!--springrecipes.ch02.reuseaspectpointcut_i-->
+    <aop:aspectj-autoproxy/>
 </beans>
