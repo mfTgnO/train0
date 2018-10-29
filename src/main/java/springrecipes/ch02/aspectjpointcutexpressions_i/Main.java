@@ -1,4 +1,4 @@
-package springrecipes.ch02.reuseaspectpointcut_ii;
+package springrecipes.ch02.aspectjpointcutexpressions_i;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
