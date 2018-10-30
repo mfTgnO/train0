@@ -34,6 +34,68 @@
     </bean>
     <context:component-scan base-package="springrecipes.ch02.postprocessors_iii"/>-->
 
+    <!--<context:component-scan base-package="springrecipes.ch02.aspectjpointcutexpressions_i"/>
+    <context:component-scan base-package="springrecipes.ch02.aspectjpointcutexpressions_ii"/>
+    <context:component-scan base-package="springrecipes.ch02.aspectjpointcutexpressions_iii"/>
+
+    <context:component-scan base-package="springrecipes.ch02.aspectorientedprogramming_i"/>
+    <context:component-scan base-package="springrecipes.ch02.aspectorientedprogramming_ii"/>
+    <context:component-scan base-package="springrecipes.ch02.aspectorientedprogramming_iii"/>
+    <context:component-scan base-package="springrecipes.ch02.aspectorientedprogramming_iv"/>
+    <context:component-scan base-package="springrecipes.ch02.aspectorientedprogramming_v"/>
+
+    <context:component-scan base-package="springrecipes.ch02.aspectprecedence_i"/>
+    <context:component-scan base-package="springrecipes.ch02.aspectprecedence_ii"/>
+
+    <context:component-scan base-package="springrecipes.ch02.configureaspectj"/>
+
+
+    <context:component-scan base-package="springrecipes.ch02.createPOJOswithfactory_i"/>
+    <context:component-scan base-package="springrecipes.ch02.createPOJOswithfactory_i"/>
+    <context:component-scan base-package="springrecipes.ch02.createPOJOswithfactory_iii"/>
+
+    <context:component-scan base-package="springrecipes.ch02.i18ntextmessages"/>
+
+    <context:component-scan base-package="springrecipes.ch02.introducestates"/>
+
+    <context:component-scan base-package="springrecipes.ch02.joinpointinformation"/>
+
+    <context:component-scan base-package="springrecipes.ch02.loadtimeweavingaspectj_i"/>
+    <context:component-scan base-package="springrecipes.ch02.loadtimeweavingaspectj_ii"/>
+    <context:component-scan base-package="springrecipes.ch02.loadtimeweavingaspectj_iii"/>
+
+    <context:component-scan base-package="springrecipes.ch02.makePOJOsaware"/>
+
+    <context:component-scan base-package="springrecipes.ch02.POJOinitializationdestruction_i"/>
+    <context:component-scan base-package="springrecipes.ch02.POJOinitializationdestruction_ii"/>
+    <context:component-scan base-package="springrecipes.ch02.POJOinitializationdestruction_iii"/>
+
+    <context:component-scan base-package="springrecipes.ch02.postprocessors_i"/>
+    <context:component-scan base-package="springrecipes.ch02.postprocessors_ii"/>
+    <context:component-scan base-package="springrecipes.ch02.postprocessors_iii"/>
+
+    <context:component-scan base-package="springrecipes.ch02.propertiesfiledata_i"/>
+    <context:component-scan base-package="springrecipes.ch02.propertiesfiledata_ii"/>
+
+    <context:component-scan base-package="springrecipes.ch02.reuseaspectpointcut_i"/>
+    <context:component-scan base-package="springrecipes.ch02.reuseaspectpointcut_ii"/>
+
+    <context:component-scan base-package="springrecipes.ch02.sequence_i"/>
+    <context:component-scan base-package="springrecipes.ch02.sequence_ii"/>
+    <context:component-scan base-package="springrecipes.ch02.sequence_iii"/>
+    <context:component-scan base-package="springrecipes.ch02.sequence_iv"/>
+    <context:component-scan base-package="springrecipes.ch02.sequence_v"/>
+    <context:component-scan base-package="springrecipes.ch02.sequence_vi"/>
+    <context:component-scan base-package="springrecipes.ch02.sequence_vii"/>
+    <context:component-scan base-package="springrecipes.ch02.sequence_viii"/>
+
+    <context:component-scan base-package="springrecipes.ch02.shop_i"/>
+    <context:component-scan base-package="springrecipes.ch02.shop_ii"/>
+
+    <context:component-scan base-package="springrecipes.ch02.springenvironmentsandprofiles"/>
+
+    <context:component-scan base-package="springrecipes.ch02.useaopforintroductions"/>-->
+
     <!--springrecipes.ch02.reuseaspectpointcut_i-->
     <aop:aspectj-autoproxy/>
     <context:load-time-weaver/>
