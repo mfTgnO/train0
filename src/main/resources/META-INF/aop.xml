@@ -1,0 +1,9 @@
+<!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
+<aspectj>
+    <weaver>
+        <include within="springrecipes.ch02.loadtimeweavingaspectj_ii.*"/>
+    </weaver>
+    <aspects>
+        <aspect name="springrecipes.ch02.loadtimeweavingaspectj_ii.ComplexCachingAspect"/>
+    </aspects>
+</aspectj>
