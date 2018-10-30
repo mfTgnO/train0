@@ -1,89 +1,71 @@
-2-18. Use AOP for introductions for POJOs
+2-19. Introduce States to Your POJOs with AOP
 Problem
-Sometimes you may have a group of classes that share a common behavior. In OOP, they must extend the
-same base class or implement the same interface. This issue is actually a crosscutting concern that can be
-modularized with AOP. In addition, the single inheritance mechanism of Java only allows a class to extend one
-base class at most. So, you cannot inherit behaviors from multiple implementation classes at the same time.
+Sometimes you may want to add new states to a group of existing objects to keep track of their usage, such
+as the calling count, the last modified date, and so on. It should not be a solution if all the objects have the
+same base class. However, it’s difficult to add such states to different classes if they are not in the same class
+hierarchy.
 Solution
-An introduction is a special type of advice in AOP. It allows objects to implement an interface dynamically by
-providing an implementation class for that interface. It seems as if objects extend an implementation class
-at runtime. Moreover, you are able to introduce multiple interfaces with multiple implementation classes to
-your objects at the same time. This can achieve the same effect as multiple inheritance.
+You can introduce a new interface to your objects with an implementation class that holds the state field.
+Then, you can write another advice to change the state according to a particular condition.ChAPTeR 2 ■ SPRInG CORe TASkS
+95
 How It Works
-Suppose you have two interfaces, MaxCalculator and MinCalculator, to define the max() and min()
-operations.
+Suppose you want to keep track of the calling count of each calculator object. Since there is no field for
+storing the counter value in the original calculator classes, you need to introduce one with Spring AOP. First,
+let’s create an interface for the operations of a counter.
 package com.apress.springrecipes.calculator;
-public interface MaxCalculator {
-public double max(double a, double b);
+public interface Counter {
+public void increase();
+public int getCount();
 }
+Next, just write a simple implementation class for this interface. This class has a count field for storing
+the counter value.
 package com.apress.springrecipes.calculator;
-public interface MinCalculator {
-public double min(double a, double b);
+public class CounterImpl implements Counter {
+private int count;
+public void increase() {
+count++;
 }
-Then you have an implementation for each interface with println statements to let you know when the
-methods are executed.
+public int getCount() {
+return count;
+}
+}
+To introduce the Counter interface to all your calculator objects with CounterImpl as the
+implementation, you can write the following introduction with a type-matching expression that
+matches all the calculator implementations:
 package com.apress.springrecipes.calculator;
-public class MaxCalculatorImpl implements MaxCalculator {
-public double max(double a, double b) {
-double result = (a >= b) ? a : b;
-System.out.println("max(" + a + ", " + b + ") = " + result);
-return result;
-}
-}
-package com.apress.springrecipes.calculator;ChAPTeR 2 ■ SPRInG CORe TASkS
-93
-public class MinCalculatorImpl implements MinCalculator {
-public double min(double a, double b) {
-double result = (a <= b) ? a : b;
-System.out.println("min(" + a + ", " + b + ") = " + result);
-return result;
-}
-}
-Now, suppose you want ArithmeticCalculatorImpl to perform the max() and min() calculation also.
-As the Java language supports single inheritance only, it is not possible for the ArithmeticCalculatorImpl
-class to extend both the MaxCalculatorImpl and MinCalculatorImpl classes at the same time. The only
-possible way is to extend either class (e.g., MaxCalculatorImpl) and implement another interface (e.g.,
-MinCalculator), either by copying the implementation code or by delegating the handling to the actual
-implementation class. In either case, you have to repeat the method declarations.
-With an introduction, you can make ArithmeticCalculatorImpl dynamically implement both the
-MaxCalculator and MinCalculator interfaces by using the implementation classes MaxCalculatorImpl
-and MinCalculatorImpl. It has the same effect as multiple inheritance from MaxCalculatorImpl
-and MinCalculatorImpl. The idea behind an introduction is that you needn’t modify the
-ArithmeticCalculatorImpl class to introduce new methods. That means you can introduce methods to
-your existing classes even without source code available.
-■ Tip You may wonder how an introduction can do that in Spring AOP. The answer is a dynamic proxy.
-As you may recall, you can specify a group of interfaces for a dynamic proxy to implement. Introduction works
-by adding an interface (e.g., MaxCalculator) to the dynamic proxy. When the methods declared in this interface
-are called on the proxy object, the proxy will delegate the calls to the back-end implementation class
-(e.g., MaxCalculatorImpl).
-Introductions, like advices, must be declared within an aspect. You may create a new aspect or reuse an
-existing aspect for this purpose. In this aspect, you can declare an introduction by annotating an arbitrary
-field with the @DeclareParents annotation.
-package com.apress.springrecipes.calculator;
+...
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.DeclareParents;
-import org.springframework.stereotype.Component;
 @Aspect
 @Component
 public class CalculatorIntroduction {
+...
 @DeclareParents(
-value = "com.apress.springrecipes.calculator.ArithmeticCalculatorImpl",
-defaultImpl = MaxCalculatorImpl.class)
-public MaxCalculator maxCalculator;ChAPTeR 2 ■ SPRInG CORe TASkS
-94
-@DeclareParents(
-value = "com.apress.springrecipes.calculator.ArithmeticCalculatorImpl",
-defaultImpl = MinCalculatorImpl.class)
-public MinCalculator minCalculator;
+value = "com.apress.springrecipes.calculator.*CalculatorImpl",
+defaultImpl = CounterImpl.class)
+public Counter counter;
+}ChAPTeR 2 ■ SPRInG CORe TASkS
+96
+This introduction introduces CounterImpl to each of your calculator objects. However, it’s still not
+enough to keep track of the calling count. You have to increase the counter value each time a calculator
+method is called. You can write an after advice for this purpose. Note that you must get this object but not
+the target object, as only the proxy object implements the Counter interface.
+package com.apress.springrecipes.calculator;
+...
+import org.aspectj.lang.annotation.After;
+import org.aspectj.lang.annotation.Aspect;
+@Aspect
+@Component
+public class CalculatorIntroduction {
+...
+@After("execution(* com.apress.springrecipes.calculator.*Calculator.*(..))"
++ " && this(counter)")
+public void increaseCount(Counter counter) {
+counter.increase();
 }
-The value attribute of the @DeclareParents annotation type indicates which classes are the targets for
-this introduction. The interface to introduce is determined by the type of the annotated field. Finally, the
-implementation class used for this new interface is specified in the defaultImpl attribute.
-Through these two introductions, you can dynamically introduce a couple of interfaces to the
-ArithmeticCalculatorImpl class. Actually, you can specify an AspectJ type-matching expression in the
-value attribute of the @DeclareParents annotation to introduce an interface to multiple classes.
-As you have introduced both the MaxCalculator and MinCalculator interfaces to your arithmetic
-calculator, you can cast it to the corresponding interface to perform the max() and min() calculations.
+}
+In the Main class, you can output the counter value for each of the calculator objects by casting them
+into the Counter type.
 package com.apress.springrecipes.calculator;
 public class Main {
 public static void main(String[] args) {
@@ -91,9 +73,12 @@ public static void main(String[] args) {
 ArithmeticCalculator arithmeticCalculator =
 (ArithmeticCalculator) context.getBean("arithmeticCalculator");
 ...
-MaxCalculator maxCalculator = (MaxCalculator) arithmeticCalculator;
-maxCalculator.max(1, 2);
-MinCalculator minCalculator = (MinCalculator) arithmeticCalculator;
-minCalculator.min(1, 2);
+UnitCalculator unitCalculator =
+(UnitCalculator) context.getBean("unitCalculator");
+...
+Counter arithmeticCounter = (Counter) arithmeticCalculator;
+System.out.println(arithmeticCounter.getCount());
+Counter unitCounter = (Counter) unitCalculator;
+System.out.println(unitCounter.getCount());
 }
 }
