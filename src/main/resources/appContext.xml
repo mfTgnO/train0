@@ -36,4 +36,5 @@
 
     <!--springrecipes.ch02.reuseaspectpointcut_i-->
     <aop:aspectj-autoproxy/>
+    <context:load-time-weaver/>
 </beans>
