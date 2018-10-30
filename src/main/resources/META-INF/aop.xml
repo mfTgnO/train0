@@ -10,11 +10,21 @@
 </aspectj>-->
 
 <!--loadtimeweavingaspectj_iii-->
-<aspectj>
+<!--<aspectj>
     <weaver>
         <include within="springrecipes.ch02.loadtimeweavingaspectj_iii.*"/>
     </weaver>
     <aspects>
-        <include within="springrecipes.ch02.loadtimeweavingaspectj_iii.*"/>
+        <include within="springrecipes.ch02.loadtimeweavingaspectj_iii.ComplexCachingAspect"/>
+    </aspects>
+</aspectj>-->
+
+<!--configureaspectj-->
+<aspectj>
+    <weaver>
+        <include within="springrecipes.ch02.configureaspectj.*"/>
+    </weaver>
+    <aspects>
+        <include within="springrecipes.ch02.configureaspectj.ComplexCachingAspect"/>
     </aspects>
 </aspectj>

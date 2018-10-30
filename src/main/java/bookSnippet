@@ -1,171 +1,19 @@
-2-20. Use Load-Time Weaving AspectJ Aspects in Spring
-Problem
-The Spring AOP framework supports only limited types of AspectJ pointcuts and allows aspects to apply
-to beans declared in the IoC container. If you want to use additional pointcut types or apply your aspects
-to objects created outside the Spring IoC container, you have to use the AspectJ framework in your Spring
-application.
-Solution
-Weaving is the process of applying aspects to your target objects. With Spring AOP, weaving happens at
-runtime through dynamic proxies. In contrast, the AspectJ framework supports both compile-time and loadtime weaving.
-AspectJ compile-time weaving is done through a special AspectJ compiler called ajc. It can weave
-aspects into your Java source files and output woven binary class files. It can also weave aspects into your
-compiled class files or JAR files. This process is known as post-compile-time weaving. You can perform
-compile-time and post-compile-time weaving for your classes before declaring them in the Spring IoC
-container. Spring is not involved in the weaving process at all. For more information on compile-time and
-post-compile-time weaving, please refer to the AspectJ documentation.
-AspectJ load-time weaving (also known as LTW) happens when the target classes are loaded into JVM
-by a class loader. For a class to be woven, a special class loader is required to enhance the bytecode of the
-target class. Both AspectJ and Spring provide load-time weavers to add load-time weaving capability to the
-class loader. You need only simple configurations to enable these load-time weavers.
-How It Works
-To understand the AspectJ load-time weaving process in a Spring application, let’s consider a calculator
-for complex numbers. First, you create the Complex class to represent complex numbers. You define the
-toString() method for this class to convert a complex number into the string representation (a + bi).
-package com.apress.springrecipes.calculator;
-public class Complex {
-private int real;
-private int imaginary;
-public Complex(int real, int imaginary) {
-this.real = real;
-this.imaginary = imaginary;
-}
-// Getters and Setters
-...
-public String toString() {
-return "(" + real + " + " + imaginary + "i)";
-}
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-98
-Next, you define an interface for the operations on complex numbers. For simplicity’s sake, only add()
-and sub() are supported.
-package com.apress.springrecipes.calculator;
-public interface ComplexCalculator {
-public Complex add(Complex a, Complex b);
-public Complex sub(Complex a, Complex b);
-}
-The implementation code for this interface is as follows. Each time, you return a new complex object as
-the result.
-package com.apress.springrecipes.calculator;
-import org.springframework.stereotype.Component;
-@Component("complexCalculator")
-public class ComplexCalculatorImpl implements ComplexCalculator {
-public Complex add(Complex a, Complex b) {
-Complex result = new Complex(a.getReal() + b.getReal(),
-a.getImaginary() + b.getImaginary());
-System.out.println(a + " + " + b + " = " + result);
-return result;
-}
-public Complex sub(Complex a, Complex b) {
-Complex result = new Complex(a.getReal() - b.getReal(),
-a.getImaginary() - b.getImaginary());
-System.out.println(a + " - " + b + " = " + result);
-return result;
-}
-}
-Now, you can test this complex number calculator with the following code in the Main class:
-package com.apress.springrecipes.calculator;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-public class Main {
-public static void main(String[] args) {ChAPTeR 2 ■ SPRInG CORe TASkS
-99
-ApplicationContext context =
-new AnnotationConfigApplicationContext(CalculatorConfiguration.class);
-ComplexCalculator complexCalculator =
-context.getBean("complexCalculator", ComplexCalculator.class);
-complexCalculator.add(new Complex(1, 2), new Complex(2, 3));
-complexCalculator.sub(new Complex(5, 8), new Complex(2, 3));
-}
-}
-So far, the complex calculator is working fine. However, you may want to improve the performance of
-the calculator by caching complex number objects. As caching is a well-known crosscutting concern, you
-can modularize it with an aspect.
-package com.apress.springrecipes.calculator;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-@Aspect
-public class ComplexCachingAspect {
-private final Map<String, Complex> cache = new ConcurrentHashMap<>();
-@Around("call(public Complex.new(int, int)) && args(a,b)")
-public Object cacheAround(ProceedingJoinPoint joinPoint, int a, int b)
-throws Throwable {
-String key = a + "," + b;
-Complex complex = cache.get(key);
-if (complex == null) {
-System.out.println("Cache MISS for (" + key + ")");
-complex = (Complex) joinPoint.proceed();
-cache.put(key, complex);
-}
-else {
-System.out.println("Cache HIT for (" + key + ")");
-}
-return complex;
-}
-}ChAPTeR 2 ■ SPRInG CORe TASkS
-100
-In this aspect, you cache the complex objects in a map with their real and imaginary values as
-keys. Then, the most suitable time to look up the cache is when a complex object is created by invoking
-the constructor. You use the AspectJ pointcut expression call to capture the join points of calling the
-Complex(int,int) constructor.
-Next, you need an around advice to alter the return value. If a complex object of the same value is
-found in the cache, you return it to the caller directly. Otherwise, you proceed with the original constructor
-invocation to create a new complex object. Before you return it to the caller, you cache it in the map for
-subsequent usages.
-The call pointcut is not supported by Spring AOP, so if you attempt to let Spring scan the pointcut
-annotation, you’ll get the error “unsupported pointcut primitive call.”
-Because this type of pointcut is not supported by Spring AOP, you have to use the AspectJ framework to
-apply this aspect. The configuration of the AspectJ framework is done through a file named aop.xml in the
-META-INF directory of the classpath root.
-<!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN"
-"http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
-<aspectj>
-<weaver>
-<include within="com.apress.springrecipes.calculator.*" />
-</weaver>
-<aspects>
-<aspect
-name="com.apress.springrecipes.calculator.ComplexCachingAspect" />
-</aspects>
-</aspectj>
-In this AspectJ configuration file, you have to specify the aspects and which classes you want your
-aspects to weave in. Here, you specify weaving ComplexCachingAspect into all the classes in the com.
-apress.springrecipes.calculator package.
-Finally, to make this load-time weaving, you need to run the application in one of two ways, as
-described in the next sections.
-Implement Load-Time Weaving with the AspectJ Weaver
-AspectJ provides a load-time weaving agent to enable load-time weaving. You need only to add a VM
-argument to the command that runs your application. Then your classes will get woven when they are
-loaded into the JVM.
-java -javaagent:lib/aspectjweaver-1.9.0.jar -jar Recipe_2_19_ii-4.0.0.jar
-If you run your application with the preceding argument, you will get the following output and cache
-status. The AspectJ agent advises all calls to the Complex(int,int) constructor.ChAPTeR 2 ■ SPRInG CORe TASkS
-101
-Cache MISS for (1,2)
-Cache MISS for (2,3)
-Cache MISS for (3,5)
-(1 + 2i) + (2 + 3i) = (3 + 5i)
-Cache MISS for (5,8)
-Cache HIT for (2,3)
-Cache HIT for (3,5)
-(5 + 8i) - (2 + 3i) = (3 + 5i)
-Implement Load-Time Weaving with Spring Load-Time Weaver
-Spring has several load-time weavers for different runtime environments. To turn on a suitable load-time
-weaver for your Spring application, you need only to add @EnableLoadTimeWeaving to your configuration class.
-Spring will be able to detect the most suitable load-time weaver for your runtime environment. Some
-Java EE application servers have class loaders that support the Spring load-time weaver mechanism, so
-there’s no need to specify a Java agent in their startup commands.
-However, for a simple Java application, you still require a weaving agent provided by Spring to enable
-load-time weaving. You have to specify the Spring agent in the VM argument of the startup command.
-java -javaagent:lib/spring-instrument-5.0.0.jar -jar Recipe_2_19_iii-4.0.0.jar
-However, if you run your application, you will get the following output and cache status:
-Cache MISS for (3,5)
-(1 + 2i) + (2 + 3i) = (3 + 5i)
-Cache HIT for (3,5)
-(5 + 8i) - (2 + 3i) = (3 + 5i)
-This is because the Spring agent advises only the Complex(int,int) constructor calls made by beans
-declared in the Spring IoC container. As the complex operands are created in the Main class, the Spring agent
-will not advise their constructor calls.
+Spring MVC
+MVC is one of the most important modules of the Spring Framework. It builds on the powerful Spring IoC
+container and makes extensive use of the container features to simplify its configuration.
+Model-View-Controller (MVC) is a common design pattern in UI design. It decouples business logic
+from UIs by separating the roles of model, view, and controller in an application. Models are responsible for
+encapsulating application data for views to present. Views should only present this data, without including any
+business logic. Controllers are responsible for receiving requests from users and invoking back-end services for
+business processing. After processing, back-end services may return some data for views to present. Controllers
+collect this data and prepare models for views to present. The core idea of the MVC pattern is to separate
+business logic from UIs to allow them to change independently without affecting each other.
+In a Spring MVC application, models usually consist of domain objects that are processed by the service
+layer and persisted by the persistence layer. Views are usually JSP templates written with the Java Standard
+Tag Library (JSTL). However, it’s also possible to define views as PDF files, Excel files, RESTful web services,
+or even Flex interfaces, the last of which are often dubbed rich Internet applications (RIAs).
+Upon finishing this chapter, you will be able to develop Java web applications using Spring MVC.
+You will also understand Spring MVC’s common controller and view types, including what has become
+the de facto use of annotations for creating controllers since the release of Spring 3.0. Moreover, you will
+understand the basic principles of Spring MVC, which will serve as the foundation for more advanced topics
+covered in the upcoming chapters.
