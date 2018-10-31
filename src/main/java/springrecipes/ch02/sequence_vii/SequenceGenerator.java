@@ -1,11 +1,15 @@
 package springrecipes.ch02.sequence_vii;
 
-import javax.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SequenceGenerator {
+    @Autowired
+    @Qualifier("datePrefixGenerator")
 //    @Resource(name = "datePrefixGenerator")
-    @Resource(name = "numberPrefixGenerator")
+//    @Resource(name = "numberPrefixGenerator")
     private PrefixGenerator prefixGenerator;
     private String suffix;
     private int initial;

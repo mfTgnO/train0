@@ -19,7 +19,7 @@ import java.util.List;
 public class ReservationQueryController {
     private final ReservationService reservationService;
 
-    // Wire service in constructor, available in application context
+    // Wire services in constructor, available in application context
     public ReservationQueryController(ReservationService reservationService) {
         this.reservationService = reservationService;
     }

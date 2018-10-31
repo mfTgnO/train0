@@ -17,3 +17,8 @@ You will also understand Spring MVC’s common controller and view types, includ
 the de facto use of annotations for creating controllers since the release of Spring 3.0. Moreover, you will
 understand the basic principles of Spring MVC, which will serve as the foundation for more advanced topics
 covered in the upcoming chapters.
+
+In this JSP template, you make use of the fmt tag library in JSTL to format the today model attribute into
+the pattern yyyy-MM-dd. Don’t forget to include the fmt tag library definition at the top of this JSP template.
+Next, you can create another JSP template for the reservation query controller and name it
+reservationQuery.jsp to match the view name.
