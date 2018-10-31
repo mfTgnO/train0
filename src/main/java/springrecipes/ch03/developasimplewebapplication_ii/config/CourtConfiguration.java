@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.developasimplewebapplication_ii.config;
 
 import org.springframework.context.annotation.Bean;
@@ -17,3 +18,4 @@ public class CourtConfiguration {
         return viewResolver;
     }
 }
+*/

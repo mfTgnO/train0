@@ -10,7 +10,7 @@ import java.util.Date;
 @Controller
 // Bind controller to URL /welcome
 // initial view will be resolved| to the name returned in the default GET method
-@RequestMapping("/welcome_i")
+@RequestMapping("/welcome")
 public class WelcomeController {
     // Controller will always look for a default GET method to call first, irrespective of name
     // In this case, named welcome to ease identification
@@ -21,6 +21,6 @@ public class WelcomeController {
         model.addAttribute("today", today);
         // Return view welcome. Via resolver the view
         // will be mapped to /WEB-INF/jsp/welcome.jsp
-        return "welcome_i";
+        return "welcome";
     }
 }

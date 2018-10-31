@@ -17,12 +17,13 @@ public class ReservationServiceImpl implements ReservationService {
 
     public ReservationServiceImpl() {
         reservations = new ArrayList<>();
-        /*reservations.add(new Reservation("Tennis #1",
+/*reservations.add(new Reservation("Tennis #1",
                 new GregorianCalendar(2008, 0, 14).getTime(), 16,
                 new Player("Roger", "N/A"), TENNIS));
         reservations.add(new Reservation("Tennis #2",
                 new GregorianCalendar(2008, 0, 14).getTime(), 20,
                 new Player("James", "N/A"), TENNIS));*/
+
         reservations.add(new Reservation("Tennis #1", LocalDate.of(2008, 1, 14), 16,
                 new Player("Roger", "N/A"), TENNIS));
         reservations.add(new Reservation("Tennis #2", LocalDate.of(2008, 1, 14), 20,

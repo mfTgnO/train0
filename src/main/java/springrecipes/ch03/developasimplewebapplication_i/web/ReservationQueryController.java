@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Controller
-@RequestMapping("/reservationQuery_i")
+@RequestMapping("/reservationQuery")
 // Bind controller to URL /reservationQuery
 // initial view will be resolved to the name returned in the default GET method
 public class ReservationQueryController {
@@ -46,6 +46,6 @@ public class ReservationQueryController {
         // Return view as a string
         // Based on resolver configuration the reservationQuery view
         // will be mapped to a JSP in /WEB-INF/jsp/reservationQuery.jsp
-        return "reservationQuery_i";
+        return "reservationQuery";
     }
 }

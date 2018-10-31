@@ -1,0 +1,4 @@
+META-INF
+    services
+        javax.servlet.ServletContainerInitializer
+            springrecipes.ch03.developasimplewebapplication_i.web.CourtServletContainerInitializer

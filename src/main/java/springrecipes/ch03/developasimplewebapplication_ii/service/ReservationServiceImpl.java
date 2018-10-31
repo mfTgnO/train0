@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.developasimplewebapplication_ii.service;
 
 import org.springframework.stereotype.Service;
@@ -34,3 +35,4 @@ public class ReservationServiceImpl implements ReservationService {
                 .collect(Collectors.toList());
     }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.developasimplewebapplication_ii.web;
 
 import org.springframework.stereotype.Controller;
@@ -49,4 +50,4 @@ public class ReservationQueryController {
         // will be mapped to a JSP in /WEB-INF/jsp/reservationQuery_ii.jsp
         return "reservationQuery";
     }
-}
+}*/
