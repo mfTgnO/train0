@@ -22,3 +22,40 @@ In this JSP template, you make use of the fmt tag library in JSTL to format the 
 the pattern yyyy-MM-dd. Don’t forget to include the fmt tag library definition at the top of this JSP template.
 Next, you can create another JSP template for the reservation query controller and name it
 reservationQuery.jsp to match the view name.
+
+Bootstrap the Application Using a WebApplicationInitializer
+In the previous section, you created a CourtServletContainerInitializer together with a file in META-INF/
+services to bootstrap the application.
+Instead of implementing your own, you are now going to leverage the convenient Spring
+implementation the SpringServletContainerInitializer. This class is an implementation
+of the ServletContainerInitializer interface and scans the classpath for implementations
+of a WebApplicationInitializer interface. Luckily, Spring provides some convenience
+implementations of this interface, which you can leverage for the application; one of them is the
+AbstractAnnotationConfigDispatcherServletInitializer.
+package com.apress.springrecipes.court.web;
+import com.apress.springrecipes.court.config.CourtConfiguration;
+import org.springframework.web.servlet.support.
+AbstractAnnotationConfigDispatcherServletInitializer;
+public class CourtWebApplicationInitializer extends
+AbstractAnnotationConfigDispatcherServletInitializer {
+@Override
+protected Class<?>[] getRootConfigClasses() {
+return null;
+}
+@Override
+protected Class<?>[] getServletConfigClasses() {
+return new Class[] {CourtConfiguration.class};
+}Chapter 3 ■ Spring MVC
+129
+@Override
+protected String[] getServletMappings() {
+return new String[] { "/"};
+}
+}
+The newly introduced CourtWebApplicationInitializer already creates a DispatcherServlet,
+so the only thing you need to do is to configure the mappings in the getServletMappings method and
+the configuration classes you want to load in the getServletConfigClasses. Next to the servlet there
+is also another component being created, optionally, which is the ContextLoaderListener. This is a
+ServletContextListener, which also creates an ApplicationContext, which will be used as a parent
+ApplicationContext for the DispatcherServlet. This is convenient if you have multiple servlets needing
+access to the same beans (services, data sources, etc.).
