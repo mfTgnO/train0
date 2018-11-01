@@ -1,4 +1,4 @@
-package springrecipes.ch03.developasimplewebapplication_i.domain;
+package springrecipes.ch03.domain;
 
 public class SportType {
     private int id;

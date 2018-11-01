@@ -1,15 +1,17 @@
-package springrecipes.ch03.developasimplewebapplication_i.domain;
+package springrecipes.ch03.domain;
 
-public class Player {
+public class Member {
     private String name;
     private String phone;
+    private String email;
 
-    public Player() {
+    public Member() {
     }
 
-    public Player(String name, String phone) {
+    public Member(String name, String phone, String email) {
         this.name = name;
         this.phone = phone;
+        this.email = email;
     }
 
     public String getName() {
@@ -26,5 +28,13 @@ public class Player {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

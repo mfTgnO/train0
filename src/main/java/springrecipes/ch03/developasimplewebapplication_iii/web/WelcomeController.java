@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.developasimplewebapplication_iii.web;
 
 import org.springframework.stereotype.Controller;
@@ -26,3 +27,4 @@ public class WelcomeController {
         return "welcome";
     }
 }
+*/

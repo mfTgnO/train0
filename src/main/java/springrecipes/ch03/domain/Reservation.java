@@ -1,6 +1,7 @@
-package springrecipes.ch03.developasimplewebapplication_ii.domain;
+package springrecipes.ch03.domain;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
 
 public class Reservation {
@@ -59,5 +60,9 @@ public class Reservation {
 
     public void setSportType(SportType sportType) {
         this.sportType = sportType;
+    }
+
+    public Date getDateAsUtilDate() {
+        return Date.from(this.date.atStartOfDay(ZoneId.systemDefault()).toInstant());
     }
 }

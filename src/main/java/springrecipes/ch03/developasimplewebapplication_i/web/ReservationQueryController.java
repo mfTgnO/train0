@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.developasimplewebapplication_i.web;
 
 import org.springframework.stereotype.Controller;
@@ -49,3 +50,4 @@ public class ReservationQueryController {
         return "reservationQuery";
     }
 }
+*/

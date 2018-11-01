@@ -1,17 +1,15 @@
-package springrecipes.ch03.maprequests.domain;
+package springrecipes.ch03.domain;
 
-public class Member {
+public class Player {
     private String name;
     private String phone;
-    private String email;
 
-    public Member() {
+    public Player() {
     }
 
-    public Member(String name, String phone, String email) {
+    public Player(String name, String phone) {
         this.name = name;
         this.phone = phone;
-        this.email = email;
     }
 
     public String getName() {
@@ -28,13 +26,5 @@ public class Member {
 
     public void setPhone(String phone) {
         this.phone = phone;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 }

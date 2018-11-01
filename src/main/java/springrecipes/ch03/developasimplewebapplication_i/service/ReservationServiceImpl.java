@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.developasimplewebapplication_i.service;
 
 import org.springframework.stereotype.Service;
@@ -30,4 +31,4 @@ public class ReservationServiceImpl implements ReservationService {
         reservations.add(new Reservation("Tennis #2", LocalDate.of(2008, 1, 14), 20,
                 new Player("James", "N/A"), TENNIS));
     }
-}
+}*/

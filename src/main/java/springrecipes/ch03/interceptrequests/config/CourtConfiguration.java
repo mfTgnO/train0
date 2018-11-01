@@ -1,5 +1,4 @@
-/*
-package springrecipes.ch03.maprequests.config;
+package springrecipes.ch03.interceptrequests.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -7,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @Configuration
-@ComponentScan("springrecipes.ch03.maprequests")
+@ComponentScan("springrecipes.ch03.interceptrequests")
 public class CourtConfiguration {
     @Bean
     public InternalResourceViewResolver internalResourceViewResolver() {
@@ -16,4 +15,4 @@ public class CourtConfiguration {
         viewResolver.setSuffix(".jsp");
         return viewResolver;
     }
-}*/
+}

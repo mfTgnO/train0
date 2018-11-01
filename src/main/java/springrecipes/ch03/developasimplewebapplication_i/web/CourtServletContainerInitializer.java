@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.developasimplewebapplication_i.web;
 
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
@@ -10,9 +11,11 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 import java.util.Set;
 
+*/
 /**
  * {@link ServletContainerInitializer} implementation to bootstrap the {@link DispatcherServlet}.
- */
+ *//*
+
 public class CourtServletContainerInitializer implements ServletContainerInitializer {
     public static final String MSG = "Starting Court Web Application";
 
@@ -29,3 +32,4 @@ public class CourtServletContainerInitializer implements ServletContainerInitial
         servletRegistration.addMapping("/");
     }
 }
+*/

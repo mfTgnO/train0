@@ -1,61 +1,139 @@
-Spring MVC
-MVC is one of the most important modules of the Spring Framework. It builds on the powerful Spring IoC
-container and makes extensive use of the container features to simplify its configuration.
-Model-View-Controller (MVC) is a common design pattern in UI design. It decouples business logic
-from UIs by separating the roles of model, view, and controller in an application. Models are responsible for
-encapsulating application data for views to present. Views should only present this data, without including any
-business logic. Controllers are responsible for receiving requests from users and invoking back-end services for
-business processing. After processing, back-end services may return some data for views to present. Controllers
-collect this data and prepare models for views to present. The core idea of the MVC pattern is to separate
-business logic from UIs to allow them to change independently without affecting each other.
-In a Spring MVC application, models usually consist of domain objects that are processed by the service
-layer and persisted by the persistence layer. Views are usually JSP templates written with the Java Standard
-Tag Library (JSTL). However, it’s also possible to define views as PDF files, Excel files, RESTful web services,
-or even Flex interfaces, the last of which are often dubbed rich Internet applications (RIAs).
-Upon finishing this chapter, you will be able to develop Java web applications using Spring MVC.
-You will also understand Spring MVC’s common controller and view types, including what has become
-the de facto use of annotations for creating controllers since the release of Spring 3.0. Moreover, you will
-understand the basic principles of Spring MVC, which will serve as the foundation for more advanced topics
-covered in the upcoming chapters.
-
-In this JSP template, you make use of the fmt tag library in JSTL to format the today model attribute into
-the pattern yyyy-MM-dd. Don’t forget to include the fmt tag library definition at the top of this JSP template.
-Next, you can create another JSP template for the reservation query controller and name it
-reservationQuery.jsp to match the view name.
-
-Bootstrap the Application Using a WebApplicationInitializer
-In the previous section, you created a CourtServletContainerInitializer together with a file in META-INF/
-services to bootstrap the application.
-Instead of implementing your own, you are now going to leverage the convenient Spring
-implementation the SpringServletContainerInitializer. This class is an implementation
-of the ServletContainerInitializer interface and scans the classpath for implementations
-of a WebApplicationInitializer interface. Luckily, Spring provides some convenience
-implementations of this interface, which you can leverage for the application; one of them is the
-AbstractAnnotationConfigDispatcherServletInitializer.
+3-3. Intercept Requests with Handler Interceptors
+Problem
+Servlet filters defined by the Servlet API can pre-handle and post-handle every web request before and after
+it’s handled by a servlet. You want to configure something with similar functions as filters in Spring’s web
+application context to take advantage of the container features.
+Moreover, sometimes you may want to pre-handle and post-handle web requests that are handled
+by Spring MVC handlers and manipulate the model attributes returned by these handlers before they are
+passed to the views.
+Solution
+Spring MVC allows you to intercept web requests for pre-handling and post-handling through handler
+interceptors. Handler interceptors are configured in Spring’s web application context, so they can make
+use of any container features and refer to any beans declared in the container. A handler interceptor can be
+registered for particular URL mappings, so it only intercepts requests mapped to certain URLs.
+Each handler interceptor must implement the HandlerInterceptor interface, which contains three
+callback methods for you to implement: preHandle(), postHandle(), and afterCompletion(). The first
+and second methods are called before and after a request is handled by a handler. The second method also
+allows you to get access to the returned ModelAndView object, so you can manipulate the model attributes
+in it. The last method is called after the completion of all request processing (i.e., after the view has been
+rendered).Chapter 3 ■ Spring MVC
+134
+How It Works
+Suppose you are going to measure each web request’s handling time by each request handler and allow the
+views to show this time to the user. You can create a custom handler interceptor for this purpose.
 package com.apress.springrecipes.court.web;
-import com.apress.springrecipes.court.config.CourtConfiguration;
-import org.springframework.web.servlet.support.
-AbstractAnnotationConfigDispatcherServletInitializer;
-public class CourtWebApplicationInitializer extends
-AbstractAnnotationConfigDispatcherServletInitializer {
-@Override
-protected Class<?>[] getRootConfigClasses() {
-return null;
+...
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
+public class MeasurementInterceptor implements HandlerInterceptor {
+public boolean preHandle(HttpServletRequest request,
+HttpServletResponse response, Object handler) throws Exception {
+long startTime = System.currentTimeMillis();
+request.setAttribute("startTime", startTime);
+return true;
 }
-@Override
-protected Class<?>[] getServletConfigClasses() {
-return new Class[] {CourtConfiguration.class};
-}Chapter 3 ■ Spring MVC
-129
-@Override
-protected String[] getServletMappings() {
-return new String[] { "/"};
+public void postHandle(HttpServletRequest request,
+HttpServletResponse response, Object handler,
+ModelAndView modelAndView) throws Exception {
+long startTime = (Long) request.getAttribute("startTime");
+request.removeAttribute("startTime");
+long endTime = System.currentTimeMillis();
+modelAndView.addObject("handlingTime", endTime - startTime);
+}
+public void afterCompletion(HttpServletRequest request,
+HttpServletResponse response, Object handler, Exception ex)
+throws Exception {
 }
 }
-The newly introduced CourtWebApplicationInitializer already creates a DispatcherServlet,
-so the only thing you need to do is to configure the mappings in the getServletMappings method and
-the configuration classes you want to load in the getServletConfigClasses. Next to the servlet there
-is also another component being created, optionally, which is the ContextLoaderListener. This is a
-ServletContextListener, which also creates an ApplicationContext, which will be used as a parent
-ApplicationContext for the DispatcherServlet. This is convenient if you have multiple servlets needing
-access to the same beans (services, data sources, etc.).
+In the preHandle() method of this interceptor, you record the start time and save it to a request
+attribute. This method should return true, allowing DispatcherServlet to proceed with request
+handling. Otherwise, DispatcherServlet assumes that this method has already handled the request, so
+DispatcherServlet returns the response to the user directly. Then, in the postHandle() method, you load
+the start time from the request attribute and compare it with the current time. You can calculate the total
+duration and then add this time to the model for passing to the view. Finally, as there is nothing for the
+afterCompletion() method to do, you can leave its body empty.
+When implementing an interface, you must implement all the methods even though you may not have
+a need for all of them. A better way is to extend the interceptor adapter class instead. This class implements
+all the interceptor methods by default. You can override only the methods that you need.
+package com.apress.springrecipes.court.web;
+...
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+public class MeasurementInterceptor extends HandlerInterceptorAdapter {Chapter 3 ■ Spring MVC
+135
+public boolean preHandle(HttpServletRequest request,
+HttpServletResponse response, Object handler) throws Exception {
+...
+}
+public void postHandle(HttpServletRequest request,
+HttpServletResponse response, Object handler,
+ModelAndView modelAndView) throws Exception {
+...
+}
+}
+To register an interceptor, you need to modify the CourtConfiguration that was created in the first
+recipe. You need to have it implement WebMvcConfigurer and override the addInterceptors method. The
+method gives you access to the InterceptorRegistry, which you can use to add interceptors. The modified
+class looks like the following:
+@Configuration
+public class InterceptorConfiguration implements WebMvcConfigurer {
+@Override
+public void addInterceptors(InterceptorRegistry registry) {
+registry.addInterceptor(measurementInterceptor());
+}
+@Bean
+public MeasurementInterceptor measurementInterceptor() {
+return new MeasurementInterceptor();
+}
+...
+}
+Now you can show this time in welcome.jsp to verify this interceptor’s functionality. As WelcomeController
+doesn’t have much to do, you may likely see that the handling time is 0 milliseconds. If this is the case, you can
+add a sleep statement to this class to see a longer handling time.
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<html>
+<head>
+<title>Welcome</title>
+</head>
+<body>
+...
+<hr />
+Handling time : ${handlingTime} ms
+</body>
+</html>Chapter 3 ■ Spring MVC
+136
+By default HandlerInterceptors apply to all @Controllers; however, sometimes you want
+to discriminate on which controllers interceptors are applied. The namespace and the Java-based
+configuration allow for interceptors to be mapped to particular URLs. It is only a matter of configuration.
+The following is the Java configuration of this:
+package com.apress.springrecipes.court.config;
+import com.apress.springrecipes.court.web.ExtensionInterceptor;
+import com.apress.springrecipes.court.web.MeasurementInterceptor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+@Configuration
+public class InterceptorConfiguration implements WebMvcConfigurer {
+@Override
+public void addInterceptors(InterceptorRegistry registry) {
+registry.addInterceptor(measurementInterceptor());
+registry.addInterceptor(summaryReportInterceptor())
+.addPathPatterns("/reservationSummary*");
+}
+@Bean
+public MeasurementInterceptor measurementInterceptor() {
+return new MeasurementInterceptor();
+}
+@Bean
+public ExtensionInterceptor summaryReportInterceptor() {
+return new ExtensionInterceptor();
+}
+}
+First there is the addition of the interceptor bean summaryReportInterceptor. The structure of the
+backing class for this bean is identical to that of the measurementInterceptor (i.e., it implements the
+HandlerInterceptor interface). However, this interceptor performs logic that should be restricted to a
+particular controller, which is mapped to the /reservationSummary URI. When registering an interceptor,
+you can specify which URLs it maps to; by default this takes an Ant-style expression. You pass this pattern
+into the addPathPatterns method; there is also an excludePathPatterns method that you can use to
+exclude the interceptor for certain URLs.

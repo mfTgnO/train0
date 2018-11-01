@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.maprequests.service;
 
 import springrecipes.ch03.maprequests.domain.Member;
@@ -11,3 +12,4 @@ public interface MemberService {
 
     List<Member> list();
 }
+*/

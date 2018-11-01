@@ -1,9 +1,8 @@
-/*
-package springrecipes.ch03.developasimplewebapplication_iii.service;
+package springrecipes.ch03.interceptrequests.service;
 
-import springrecipes.ch03.developasimplewebapplication_iii.domain.Player;
-import springrecipes.ch03.developasimplewebapplication_iii.domain.Reservation;
-import springrecipes.ch03.developasimplewebapplication_iii.domain.SportType;
+import springrecipes.ch03.domain.Player;
+import springrecipes.ch03.domain.Reservation;
+import springrecipes.ch03.domain.SportType;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -18,14 +17,6 @@ public class ReservationServiceImpl implements ReservationService {
 
     public ReservationServiceImpl() {
         reservations = new ArrayList<>();
-*/
-/*reservations.add(new Reservation("Tennis #1",
-                new GregorianCalendar(2008, 0, 14).getTime(), 16,
-                new Player("Roger", "N/A"), TENNIS));
-        reservations.add(new Reservation("Tennis #2",
-                new GregorianCalendar(2008, 0, 14).getTime(), 20,
-                new Player("James", "N/A"), TENNIS));*//*
-
 
         reservations.add(new Reservation("Tennis #1", LocalDate.of(2008, 1, 14), 16,
                 new Player("Roger", "N/A"), TENNIS));
@@ -44,4 +35,3 @@ public class ReservationServiceImpl implements ReservationService {
         return result;
     }
 }
-*/

@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.maprequests.service;
 
 import org.springframework.stereotype.Service;
@@ -27,3 +28,4 @@ public class MemberServiceImpl implements MemberService {
         return new ArrayList<>(members.values());
     }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.maprequests.web;
 
 import org.springframework.stereotype.Controller;
@@ -32,3 +33,4 @@ public class MemberControlling {
         return "redirect:";
     }
 }
+*/
