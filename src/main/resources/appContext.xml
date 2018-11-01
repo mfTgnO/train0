@@ -4,7 +4,7 @@
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:aop="http://www.springframework.org/schema/aop"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
-    <context:component-scan base-package="springrecipes.ch02.sequence_vii.config"/>
+    <!--<context:component-scan base-package="springrecipes.ch02.sequence_vii.config"/>-->
     <!--<context:component-scan base-package="springrecipes.ch02.sequence_viii.config"/>-->
     <!--<context:component-scan base-package="springrecipes.ch02.POJOinitializationdestruction_ii.config"/>-->
     <!--<context:component-scan base-package="springrecipes.ch02.POJOinitializationdestruction_ii">
@@ -34,7 +34,7 @@
     </bean>
     <context:component-scan base-package="springrecipes.ch02.postprocessors_iii"/>-->
 
-    <context:component-scan base-package="springrecipes.ch02.aspectjpointcutexpressions_i"/>
+    <!--<context:component-scan base-package="springrecipes.ch02.aspectjpointcutexpressions_i"/>
     <context:component-scan base-package="springrecipes.ch02.aspectjpointcutexpressions_ii"/>
     <context:component-scan base-package="springrecipes.ch02.aspectjpointcutexpressions_iii"/>
 
@@ -94,9 +94,9 @@
 
     <context:component-scan base-package="springrecipes.ch02.springenvironmentsandprofiles"/>
 
-    <context:component-scan base-package="springrecipes.ch02.useaopforintroductions"/>
+    <context:component-scan base-package="springrecipes.ch02.useaopforintroductions"/>-->
 
     <!--springrecipes.ch02.reuseaspectpointcut_i-->
-    <aop:aspectj-autoproxy/>
-    <context:load-time-weaver/>
+    <!--<aop:aspectj-autoproxy/>
+    <context:load-time-weaver/>-->
 </beans>

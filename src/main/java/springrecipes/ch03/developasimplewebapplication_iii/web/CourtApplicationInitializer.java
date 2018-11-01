@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.developasimplewebapplication_iii.web;
 
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
@@ -20,3 +21,4 @@ public class CourtApplicationInitializer extends AbstractAnnotationConfigDispatc
         return new String[]{"/","/welcome"};
     }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.developasimplewebapplication_iii.web.config;
 
 import org.springframework.context.annotation.Bean;
@@ -19,3 +20,4 @@ public class WebConfiguration {
         return viewResolver;
     }
 }
+*/
