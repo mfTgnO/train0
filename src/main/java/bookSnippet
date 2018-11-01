@@ -1,139 +1,941 @@
-3-3. Intercept Requests with Handler Interceptors
+3-6. Resolve Views by Name
 Problem
-Servlet filters defined by the Servlet API can pre-handle and post-handle every web request before and after
-it’s handled by a servlet. You want to configure something with similar functions as filters in Spring’s web
-application context to take advantage of the container features.
-Moreover, sometimes you may want to pre-handle and post-handle web requests that are handled
-by Spring MVC handlers and manipulate the model attributes returned by these handlers before they are
-passed to the views.
+After a handler has finished handling a request, it returns a logical view name, in which case
+DispatcherServlet has to delegate control to a view template so the information is rendered. You want to
+define a strategy for DispatcherServlet to resolve views by their logical names.
 Solution
-Spring MVC allows you to intercept web requests for pre-handling and post-handling through handler
-interceptors. Handler interceptors are configured in Spring’s web application context, so they can make
-use of any container features and refer to any beans declared in the container. A handler interceptor can be
-registered for particular URL mappings, so it only intercepts requests mapped to certain URLs.
-Each handler interceptor must implement the HandlerInterceptor interface, which contains three
-callback methods for you to implement: preHandle(), postHandle(), and afterCompletion(). The first
-and second methods are called before and after a request is handled by a handler. The second method also
-allows you to get access to the returned ModelAndView object, so you can manipulate the model attributes
-in it. The last method is called after the completion of all request processing (i.e., after the view has been
-rendered).Chapter 3 ■ Spring MVC
-134
+In a Spring MVC application, views are resolved by one or more view resolver beans declared in the web
+application context. These beans have to implement the ViewResolver interface for DispatcherServlet to
+autodetect them. Spring MVC comes with several ViewResolver implementations for you to resolve views
+using different strategies.
 How It Works
-Suppose you are going to measure each web request’s handling time by each request handler and allow the
-views to show this time to the user. You can create a custom handler interceptor for this purpose.
-package com.apress.springrecipes.court.web;
-...
-import org.springframework.web.servlet.HandlerInterceptor;
-import org.springframework.web.servlet.ModelAndView;
-public class MeasurementInterceptor implements HandlerInterceptor {
-public boolean preHandle(HttpServletRequest request,
-HttpServletResponse response, Object handler) throws Exception {
-long startTime = System.currentTimeMillis();
-request.setAttribute("startTime", startTime);
-return true;
+You will explore different view resolving strategies, starting with a naming template using a prefix and
+suffix to generate the actual name to resolving views based on the name from either an XML file or
+ResourceBundle. Finally you will learn how to use multiple ViewResolvers together.
+Resolve Views Based on a Template’s Name and Location
+The basic strategy of resolving views is to map them to a template’s name and location directly. The view
+resolver InternalResourceViewResolver maps each view name to an application’s directory by means of a
+prefix and a suffix declaration. To register InternalResourceViewResolver, you can declare a bean of this
+type in the web application context.
+@Bean
+public InternalResourceViewResolver viewResolver() {
+InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
+viewResolver.setPrefix("/WEB-INF/jsp/");
+viewResolver.setSuffix(".jsp");
+return viewResolver;
 }
-public void postHandle(HttpServletRequest request,
-HttpServletResponse response, Object handler,
-ModelAndView modelAndView) throws Exception {
-long startTime = (Long) request.getAttribute("startTime");
-request.removeAttribute("startTime");
-long endTime = System.currentTimeMillis();
-modelAndView.addObject("handlingTime", endTime - startTime);
+For example, InternalResourceViewResolver resolves the view names welcome and reservationQuery
+in the following way:
+welcome --> /WEB-INF/jsp/welcome.jsp
+reservationQuery --> /WEB-INF/jsp/reservationQuery.jsp
+The type of the resolved views can be specified by the viewClass property. By default,
+InternalResourceViewResolver resolves view names into view objects of type JstlView if the JSTL library
+(i.e., jstl.jar) is present in the classpath. So, you can omit the viewClass property if your views are JSP
+templates with JSTL tags.
+InternalResourceViewResolver is simple, but it can only resolve internal resource views that can be
+forwarded by the Servlet API’s RequestDispatcher (e.g., an internal JSP file or a servlet). As for other view
+types supported by Spring MVC, you have to resolve them using other strategies.Chapter 3 ■ Spring MVC
+142
+Resolve Views from an XML Configuration File
+Another strategy for resolving views is to declare them as Spring beans and resolve them by their bean
+names. You can declare the view beans in the same configuration file as the web application context, but it’s
+better to isolate them in a separate configuration file. By default, XmlViewResolver loads view beans from
+/WEB-INF/views.xml, but this location can be overridden through the location property.
+Configuration
+public class ViewResolverConfiguration implements WebMvcConfigurer, ResourceLoaderAware {
+private ResourceLoader resourceLoader;
+@Bean
+public ViewResolver viewResolver() {
+XmlViewResolver viewResolver = new XmlViewResolver();
+viewResolver.setLocation(resourceLoader.getResource("/WEB-INF/court-views.nl"));
+return viewResolver;
 }
-public void afterCompletion(HttpServletRequest request,
-HttpServletResponse response, Object handler, Exception ex)
-throws Exception {
-}
-}
-In the preHandle() method of this interceptor, you record the start time and save it to a request
-attribute. This method should return true, allowing DispatcherServlet to proceed with request
-handling. Otherwise, DispatcherServlet assumes that this method has already handled the request, so
-DispatcherServlet returns the response to the user directly. Then, in the postHandle() method, you load
-the start time from the request attribute and compare it with the current time. You can calculate the total
-duration and then add this time to the model for passing to the view. Finally, as there is nothing for the
-afterCompletion() method to do, you can leave its body empty.
-When implementing an interface, you must implement all the methods even though you may not have
-a need for all of them. A better way is to extend the interceptor adapter class instead. This class implements
-all the interceptor methods by default. You can override only the methods that you need.
-package com.apress.springrecipes.court.web;
-...
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
-public class MeasurementInterceptor extends HandlerInterceptorAdapter {Chapter 3 ■ Spring MVC
-135
-public boolean preHandle(HttpServletRequest request,
-HttpServletResponse response, Object handler) throws Exception {
-...
-}
-public void postHandle(HttpServletRequest request,
-HttpServletResponse response, Object handler,
-ModelAndView modelAndView) throws Exception {
-...
-}
-}
-To register an interceptor, you need to modify the CourtConfiguration that was created in the first
-recipe. You need to have it implement WebMvcConfigurer and override the addInterceptors method. The
-method gives you access to the InterceptorRegistry, which you can use to add interceptors. The modified
-class looks like the following:
-@Configuration
-public class InterceptorConfiguration implements WebMvcConfigurer {
 @Override
-public void addInterceptors(InterceptorRegistry registry) {
-registry.addInterceptor(measurementInterceptor());
+public void setResourceLoader(ResourceLoader resourceLoader) {
+this.resourceLoader=resourceLoader;
+}
+}
+Note in the implementation of the ResourceLoaderAware interface, you need to load resources as
+the location property takes an argument of the type Resource. In a Spring XML file, the conversion from
+String to Resource is handled for you; however, when using a Java-based configuration, you have to do
+some additional work. In the court-views.xml configuration file, you can declare each view as a normal
+Spring bean by setting the class name and properties. In this way, you can declare any types of views
+(e.g., RedirectView and even custom view types).
+<beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd">
+<bean id="welcome"
+class="org.springframework.web.servlet.view.JstlView">
+<property name="url" value="/WEB-INF/jsp/welcome.jsp" />
+</bean>
+<bean id="reservationQuery"
+class="org.springframework.web.servlet.view.JstlView">
+<property name="url" value="/WEB-INF/jsp/reservationQuery.jsp" />
+</bean>
+<bean id="welcomeRedirect"
+class="org.springframework.web.servlet.view.RedirectView">
+<property name="url" value="welcome" />
+</bean>
+</beans>Chapter 3 ■ Spring MVC
+143
+Resolve Views from a Resource Bundle
+In addition to an XML configuration file, you can declare view beans in a resource bundle.
+ResourceBundleViewResolver loads view beans from a resource bundle in the classpath root. Note that
+ResourceBundleViewResolver can also take advantage of the resource bundle capability to load view beans
+from different resource bundles for different locales.
+@Bean
+public ResourceBundleViewResolver viewResolver() {
+ResourceBundleViewResolver viewResolver = new ResourceBundleViewResolver();
+viewResolver.setBasename("court-views");
+return viewResolver;
+}
+As you specify court-views as the base name of ResourceBundleViewResolver, the resource bundle is
+court-views.properties. In this resource bundle, you can declare view beans in the format of properties.
+This type of declaration is equivalent to the XML bean declaration.
+welcome.(class)=org.springframework.web.servlet.view.JstlView
+welcome.url=/WEB-INF/jsp/welcome.jsp
+reservationQuery.(class)=org.springframework.web.servlet.view.JstlView
+reservationQuery.url=/WEB-INF/jsp/reservationQuery.jsp
+welcomeRedirect.(class)=org.springframework.web.servlet.view.RedirectView
+welcomeRedirect.url=welcome
+Resolve Views with Multiple Resolvers
+If you have a lot of views in your web application, it is often insufficient to choose only one view-resolving
+strategy. Typically, InternalResourceViewResolver can resolve most of the internal JSP views, but there are
+usually other types of views that have to be resolved by ResourceBundleViewResolver. In this case, you have
+to combine both strategies for view resolution.
+@Bean
+public ResourceBundleViewResolver viewResolver() {
+ResourceBundleViewResolver viewResolver = new ResourceBundleViewResolver();
+viewResolver.setOrder(0);
+viewResolver.setBasename("court-views");
+return viewResolver;
 }
 @Bean
-public MeasurementInterceptor measurementInterceptor() {
-return new MeasurementInterceptor();
+public InternalResourceViewResolver internalResourceViewResolver() {
+InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
+viewResolver.setOrder(1);
+viewResolver.setPrefix("/WEB-INF/jsp/");
+viewResolver.setSuffix(".jsp");
+return viewResolver;
+}Chapter 3 ■ Spring MVC
+144
+When choosing more than one strategy at the same time, it’s important to specify the resolving priority.
+You can set the order properties of the view resolver beans for this purpose. The lower-order value represents
+the higher priority. Note that you should assign the lowest priority to InternalResourceViewResolver
+because it always resolves a view no matter whether it exists. So, other resolvers will have no chance to resolve
+a view if they have lower priorities. Now the resource bundle court-views.properties should only contain
+the views that can’t be resolved by InternalResourceViewResolver (e.g., the redirect views).
+welcomeRedirect.(class)=org.springframework.web.servlet.view.RedirectView
+welcomeRedirect.url=welcome
+Use the Redirect Prefix
+If you have InternalResourceViewResolver configured in your web application context, it can resolve
+redirect views by using the redirect: prefix in the view name. Then the rest of the view name is treated
+as the redirect URL. For example, the view name redirect:welcome triggers a redirect to the relative URL
+welcome. You can also specify an absolute URL in the view name.
+
+
+---------------------------------------------------------------------------
+3-7. Use Views and Content Negotiation
+Problem
+You are relying on extension-less URLs in your controllers—welcome and not welcome.html or welcome.pdf.
+You want to devise a strategy so the correct content and type are returned for all requests.
+Solution
+When a request is received for a web application, it contains a series of properties that allow the processing
+framework, in this case Spring MVC, to determine the correct content and type to return to the requesting
+party. The main two properties include the URL extension provided in a request and the HTTP Accept
+header. For example, if a request is made to a URL in the form /reservationSummary.xml, a controller is
+capable of inspecting the extension and delegating it to a logical view representing an XML view. However,
+the possibility can arise for a request to be made to a URL in the form /reservationSummary. Should this
+request be delegated to an XML view or an HTML view? Or perhaps some other type of view? It’s impossible
+to tell through the URL. But instead of deciding on a default view for such requests, a request can be
+inspected for its HTTP Accept header to decide what type of view is more appropriate.
+Inspecting HTTP Accept headers in a controller can be a messy process. So, Spring MVC supports the
+inspection of headers through ContentNegotiatingViewResolver, allowing view delegation to be made
+based on either a URL file extension or an HTTP Accept header value.
+How It Works
+The first thing you need to realize about Spring MVC content negotiation is that it’s configured as a resolver,
+just like those illustrated in recipe 3-6. The Spring MVC content negotiating resolver is based on the
+ContentNegotiatingViewResolver class. But before we describe how it works, we will illustrate how to
+configure and integrate it with other resolvers.Chapter 3 ■ Spring MVC
+145
+@Configuration
+ublic class ViewResolverConfiguration implements WebMvcConfigurer {
+@Autowired
+private ContentNegotiationManager contentNegotiationManager;
+@Override
+public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+Map<String, MediaType> mediatypes = new HashMap<>();
+mediatypes.put("html", MediaType.TEXT_HTML);
+mediatypes.put("pdf", MediaType.valueOf("application/pdf"));
+mediatypes.put("xls", MediaType.valueOf("application/vnd.ms-excel"));
+mediatypes.put("xml", MediaType.APPLICATION_XML);
+mediatypes.put("json", MediaType.APPLICATION_JSON);
+configurer.mediaTypes(mediatypes);
 }
+@Bean
+public ContentNegotiatingViewResolver contentNegotiatingViewResolver() {
+ContentNegotiatingViewResolver viewResolver = new ContentNegotiatingViewResolver();
+viewResolver.setContentNegotiationManager(contentNegotiationManager);
+return viewResolver;
+}
+}
+First you need to configure content negotiation. The default configuration adds a
+ContentNegotiationManager, which can be configured by implementing the configureContentNegotiation
+method. To get access to the configured ContentNegotiationManager, you can simply autowire it in your
+configuration class.
+Turn your attention back to the ContentNegotiatingViewResolver resolver. This configuration sets
+up the resolver to have the highest priority among all resolvers, which is necessary to make the content
+negotiating resolver work. The reason for this resolver having the highest priority is that it does not resolve
+views themselves but rather delegates them to other view resolvers (which it automatically detects). Since a
+resolver that does not resolve views can be confusing, we will elaborate with an example.
+Let’s assume a controller receives a request for /reservationSummary.xml. Once the handler method
+finishes, it sends control to a logical view named reservation. At this point, Spring MVC resolvers come into
+play, the first of which is the ContentNegotiatingViewResolver resolver, since it has the highest priority.
+The ContentNegotiatingViewResolver resolver first determines the media type for a request
+based on the following criteria: it checks a request path extension (e.g., .html, .xml, or .pdf) against
+the default media types (e.g., text/html) specified by the mediaTypes map in the configuration of the
+ContentNegotiatingManager bean. If a request path has an extension but no match can be found in the
+default mediaTypes section, an attempt is made to determine an extension’s media type using FileTypeMap
+belonging to Java Activation Framework. If no extension is present in a request path, the HTTP Accept
+header of the request is used. For the case of a request made on /reservationSummary.xml, the media
+type is determined in step 1 to be application/xml. However, for a request made on a URL like /
+reservationSummary, the media type is not determined until step 3.
+The HTTP Accept header contains values such as Accept: text/html or Accept: application/pdf.
+These values help the resolver determine the media type a requester is expecting, given that no extension is
+present in the requesting URL.Chapter 3 ■ Spring MVC
+146
+At this juncture, the ContentNegotiatingViewResolver resolver has a media type and logical view named
+reservation. Based on this information, an iteration is performed over the remaining resolvers—based on
+their order—to determine what view best matches the logical name based on the detected media type.
+This process allows you to have multiple logical views with the same name, each supporting a
+different media type (e.g., HTML, PDF, or XLS), with ContentNegotiatingViewResolver resolving
+which is the best match. In such cases, a controller’s design is further simplified, since it won’t be
+necessary to hard-code the logical view necessary to create a certain media type (e.g., pdfReservation,
+xlsReservation, or htmlReservation) but instead a single view (e.g., reservation), letting the
+ContentNegotiatingViewResolver resolver determine the best match.
+A series of outcomes for this process can be the following:
+•	 The media type is determined to be application/pdf. If the resolver with the highest
+priority (lower order) contains a mapping to a logical view named reservation
+but such a view does not support the application/pdf type, no match occurs—the
+lookup process continues onto the remaining resolvers.
+•	 The media type is determined to be application/pdf. The resolver with the highest
+priority (lower order) containing a mapping to a logical view named reservation
+and having support for application/pdf is matched.
+•	 The media type is determined to be text/html. There are four resolvers with a
+logical view named reservation, but the views mapped to the two resolvers with
+highest priority do not support text/html. It’s the remaining resolver containing a
+mapping for a view named reservation that supports text/html that is matched.
+This search process for views automatically takes place on all the resolvers configured in an
+application. It’s also possible to configure—within the ContentNegotiatingViewResolver bean—
+default views and resolvers, in case you don’t want to fall back on configurations made outside the
+ContentNegotiatingViewResolver resolver.
+Recipe 3-11 will illustrate a controller that relies on the ContentNegotiatingViewResolver resolver to
+determine an application’s views.
+
+
+-----------------------------------------------------------------------------
+3-8. Map Exceptions to Views
+Problem
+When an unknown exception occurs, your application server usually displays the evil exception stack trace
+to the user. Your users have nothing to do with this stack trace and complain that your application is not user
+friendly. Moreover, it’s also a potential security risk, as you may expose the internal method call hierarchy to
+users. However, a web application’s web.xml can be configured to display friendly JSP pages in case an HTTP
+error or class exception occur. Spring MVC supports a more robust approach to managing views for class
+exceptions.
+Solution
+In a Spring MVC application, you can register one or more exception resolver beans in the web application
+context to resolve uncaught exceptions. These beans have to implement the HandlerExceptionResolver
+interface for DispatcherServlet to autodetect them. Spring MVC comes with a simple exception resolver
+for you to map each category of exceptions to a view.Chapter 3 ■ Spring MVC
+147
+How It Works
+Suppose your reservation service throws the following exception because of a reservation not being available:
+package com.apress.springrecipes.court.service;
+...
+public class ReservationNotAvailableException extends RuntimeException {
+private String courtName;
+private Date date;
+private int hour;
+// Constructors and Getters
 ...
 }
-Now you can show this time in welcome.jsp to verify this interceptor’s functionality. As WelcomeController
-doesn’t have much to do, you may likely see that the handling time is 0 milliseconds. If this is the case, you can
-add a sleep statement to this class to see a longer handling time.
+To resolve uncaught exceptions, you can write your custom exception resolver by implementing the
+HandlerExceptionResolver interface. Usually, you’ll want to map different categories of exceptions into
+different error pages. Spring MVC comes with the exception resolver SimpleMappingExceptionResolver for
+you to configure the exception mappings in the web application context. For example, you can register the
+following exception resolver in your configuration:
+@Override
+public void configureHandlerExceptionResolvers(List<HandlerExceptionResolver>
+exceptionResolvers) {
+exceptionResolvers.add(handlerExceptionResolver());
+}
+@Bean
+public HandlerExceptionResolver handlerExceptionResolver() {
+Properties exceptionMapping = new Properties();
+exceptionMapping.setProperty(
+ReservationNotAvailableException.class.getName(), "reservationNotAvailable");
+SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver();
+exceptionResolver.setExceptionMappings(exceptionMapping);
+exceptionResolver.setDefaultErrorView("error");
+return exceptionResolver;
+}
+In this exception resolver, you define the logical view name reservationNotAvailable for
+ReservationNotAvailableException. You can add any number of exception classes using the
+exceptionMappings property, all the way down to the more general exception class java.lang.Exception.
+In this manner, depending on the type of class exception, a user is served a view in accordance with the
+exception.
+The property defaultErrorView is used to define a default view named error, used if an exception
+class not mapped in the exceptionMapping element is raised.Chapter 3 ■ Spring MVC
+148
+Addressing the corresponding views, if the InternalResourceViewResolver is configured in your
+web application context, the following reservationNotAvailable.jsp page is shown if a reservation is
+not available:
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <html>
 <head>
-<title>Welcome</title>
+<title>Reservation Not Available</title>
 </head>
 <body>
-...
-<hr />
-Handling time : ${handlingTime} ms
+Your reservation for ${exception.courtName} is not available on <fmt:formatDate
+value="${exception.date}" pattern="yyyy-MM-dd" /> at ${exception.hour}:00.
 </body>
-</html>Chapter 3 ■ Spring MVC
-136
-By default HandlerInterceptors apply to all @Controllers; however, sometimes you want
-to discriminate on which controllers interceptors are applied. The namespace and the Java-based
-configuration allow for interceptors to be mapped to particular URLs. It is only a matter of configuration.
-The following is the Java configuration of this:
-package com.apress.springrecipes.court.config;
-import com.apress.springrecipes.court.web.ExtensionInterceptor;
-import com.apress.springrecipes.court.web.MeasurementInterceptor;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-@Configuration
-public class InterceptorConfiguration implements WebMvcConfigurer {
+In an error page, the exception instance can be accessed by the variable ${exception}, so you can show
+the user more details on this exception.
+It’s a good practice to define a default error page for any unknown exceptions. You can use the property
+defaultErrorView to define a default view or map a page to the key java.lang.Exception as the last entry
+of the mapping, so it will be shown if no other entry has been matched before. Then you can create this
+view’s JSP— error.jsp—as follows:
+<html>
+<head>
+<title>Error</title>
+</head>
+<body>
+An error has occurred. Please contact our administrator for details.
+</body>
+</html>
+Map Exceptions Using @ExceptionHandler
+Instead of configuring a HandlerExceptionResolver, you can annotate a method with @ExceptionHandler.
+It works in a similar way as the @RequestMapping annotation.
+@Controller
+@RequestMapping("/reservationForm")
+@SessionAttributes("reservation")
+public class ReservationFormController {
+@ExceptionHandler(ReservationNotAvailableException.class)
+public String handle(ReservationNotAvailableException ex) {
+return "reservationNotAvailable";
+}
+@ExceptionHandler
+public String handleDefault(Exception e) {
+return "error";
+}
+...
+}Chapter 3 ■ Spring MVC
+149
+You have here two methods annotated as @ExceptionHandler. The first is for handling the specific
+ReservationNotAvailableException; the second is the general (catchall) exception-handling method. You
+also don’t have to specify a HandlerExceptionResolver in the WebConfiguration anymore.
+Methods annotated with @ExceptionHandler can have a variety of return types (like the @RequestMapping
+methods); here you just return the name of the view that needs to be rendered, but you could also have
+returned a ModelAndView, a View, and so on.
+Although using @ExceptionHandler annotated methods is very powerful and flexible, there
+is a drawback when you put them in controllers. Those methods will work only for the controller
+they are defined in, so if you have an exception occurring in another controller (for instance, the
+WelcomeController), these methods won’t be called. Generic exception-handling methods have to be
+moved to a separate class, and that class has to be annotated with @ControllerAdvice.
+@ControllerAdvice
+public class ExceptionHandlingAdvice {
+@ExceptionHandler(ReservationNotAvailableException.class)
+public String handle(ReservationNotAvailableException ex) {
+return "reservationNotAvailable";
+}
+@ExceptionHandler
+public String handleDefault(Exception e) {
+return "error";
+}
+}
+This class will apply to all controllers in the application context, which is why it’s called @ControllerAdvice.
+
+-----------------------------------------------------------------------------
+3-9. Handle Forms with Controllers
+Problem
+In a web application, you often have to deal with forms. A form controller has to show a form to a user and
+also handle the form submission. Form handling can be a complex and variable task.
+Solution
+When a user interacts with a form, it requires support for two operations from a controller. First, when a form
+is initially requested, it asks the controller to show a form by an HTTP GET request, which renders the form
+view to the user. Then when the form is submitted, an HTTP POST request is made to handle things such
+as validation and business processing for the data present in the form. If the form is handled successfully, it
+renders the success view to the user. Otherwise, it renders the form view again with errors.
+How It Works
+Suppose you want to allow a user to make a court reservation by filling out a form. To give you a better idea
+of the data handled by a controller, we will introduce the controller’s view (i.e., the form) first.Chapter 3 ■ Spring MVC
+150
+Create a Form’s Views
+Let’s create the form view reservationForm.jsp. The form relies on Spring’s form tag library, as this
+simplifies a form’s data binding, display of error messages, and the redisplay of original values entered by the
+user in case of errors.
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+<html>
+<head>
+<title>Reservation Form</title>
+<style>
+.error {
+color: #ff0000;
+font-weight: bold;
+}
+</style>
+</head>
+<body>
+<form:form method="post" modelAttribute="reservation">
+<form:errors path="*" cssClass="error" />
+<table>
+<tr>
+<td>Court Name</td>
+<td><form:input path="courtName" /></td>
+<td><form:errors path="courtName" cssClass="error" /></td>
+</tr>
+<tr>
+<td>Date</td>
+<td><form:input path="date" /></td>
+<td><form:errors path="date" cssClass="error" /></td>
+</tr>
+<tr>
+<td>Hour</td>
+<td><form:input path="hour" /></td>
+<td><form:errors path="hour" cssClass="error" /></td>
+</tr>
+<tr>
+<td colspan="3"><input type="submit" /></td>
+</tr>
+</table>
+</form:form>
+</body>
+</html>
+The Spring <form:form> declares two attributes. The method="post" attribute indicates that a form
+performs an HTTP POST request upon submission. The modelAttribute="reservation" attribute indicates
+that the form data is bound to a model named reservation. The first attribute should be familiar to you
+since it’s used on most HTML forms. The second attribute will become clearer once we describe the
+controller that handles the form.Chapter 3 ■ Spring MVC
+151
+Bear in mind the <form:form> tag is rendered into standard HTML before it’s sent to a user, so it’s not
+that modelAttribute="reservation" is of use to a browser; the attribute is used as a facility to generate the
+actual HTML form.
+Next, you can find the <form:errors> tag, used to define a location in which to place errors in case a
+form does not meet the rules set forth by a controller. The attribute path="*" is used to indicate the display
+of all errors—given the wildcard *—whereas the attribute cssClass="error" is used to indicate a CSS
+formatting class to display the errors.
+Next, you can find the form’s various <form:input> tags accompanied by another set of corresponding
+<form:errors> tags. These tags make use of the attribute path to indicate the form’s fields, which in this case
+are courtName, date, and hour.
+The <form:input> tags are bound to properties corresponding to modelAttribute by using the path
+attribute. They show the user the original value of the field, which will be either the bound property value or
+the value rejected because of a binding error. They must be used inside the <form:form> tag, which defines a
+form that binds to modelAttribute by its name.
+Finally, you can find the standard HTML tag <input type="submit" /> that generates a Submit button
+and trigger the sending of data to the server, followed by the </form:form> tag that closes out the form. If the
+form and its data are processed correctly, you need to create a success view to notify the user of a successful
+reservation. The reservationSuccess.jsp illustrated next serves this purpose:
+<html>
+<head>
+<title>Reservation Success</title>
+</head>
+<body>
+Your reservation has been made successfully.
+</body>
+</html>
+It’s also possible for errors to occur because of invalid values being submitted in a form. For example,
+if the date is not in a valid format or an alphabetic character is presented for hour, the controller is designed
+to reject such field values. The controller will then generate a list of selective error codes for each error to be
+returned to the form view, and the values are placed inside the <form:errors> tag.
+For example, for an invalid value input in the date field, the following error codes are generated by
+a controller:
+typeMismatch.command.date
+typeMismatch.date
+typeMismatch.java.time.LocalDate
+typeMismatch
+If you have a ResourceBundleMessageSource defined, you can include the following error messages in
+your resource bundle for the appropriate locale (e.g., messages.properties for the default locale):
+typeMismatch.date=Invalid date format
+typeMismatch.hour=Invalid hour format
+The corresponding error codes and their values are returned to a user if a failure occurs when
+processing form data.
+Now that you know the structure of the views involved with a form, as well as the data handled by it, let’s
+take a look at the logic that handles the submitted data (i.e., the reservation) in a form.Chapter 3 ■ Spring MVC
+152
+Create a Form’s Service Processing
+This is not the controller but rather the service used by the controller to process the form’s data reservation.
+First define a make() method in the ReservationService interface.
+package com.apress.springrecipes.court.service;
+...
+public interface ReservationService {
+...
+void make(Reservation reservation)
+throws ReservationNotAvailableException;
+}
+Then you implement this make() method by adding a Reservation item to the list that stores the
+reservations. You throw a ReservationNotAvailableException in case of a duplicate reservation.
+package com.apress.springrecipes.court.service;
+...
+public class ReservationServiceImpl implements ReservationService {
+...
 @Override
-public void addInterceptors(InterceptorRegistry registry) {
-registry.addInterceptor(measurementInterceptor());
-registry.addInterceptor(summaryReportInterceptor())
-.addPathPatterns("/reservationSummary*");
+public void make(Reservation reservation) throws ReservationNotAvailableException {
+long cnt = reservations.stream()
+.filter(made -> Objects.equals(made.getCourtName(), reservation.getCourtName()))
+.filter(made -> Objects.equals(made.getDate(), reservation.getDate()))
+.filter(made -> made.getHour() == reservation.getHour())
+.count();
+if (cnt > 0) {
+throw new ReservationNotAvailableException(reservation
+.getCourtName(), reservation.getDate(), reservation
+.getHour());
+} else {
+reservations.add(reservation);
 }
-@Bean
-public MeasurementInterceptor measurementInterceptor() {
-return new MeasurementInterceptor();
-}
-@Bean
-public ExtensionInterceptor summaryReportInterceptor() {
-return new ExtensionInterceptor();
 }
 }
-First there is the addition of the interceptor bean summaryReportInterceptor. The structure of the
-backing class for this bean is identical to that of the measurementInterceptor (i.e., it implements the
-HandlerInterceptor interface). However, this interceptor performs logic that should be restricted to a
-particular controller, which is mapped to the /reservationSummary URI. When registering an interceptor,
-you can specify which URLs it maps to; by default this takes an Ant-style expression. You pass this pattern
-into the addPathPatterns method; there is also an excludePathPatterns method that you can use to
-exclude the interceptor for certain URLs.
+Now that you have a better understanding of the two elements that interact with a controller—a form’s
+views and the reservation service class—let’s create a controller to handle the court reservation form.
+Create a Form’s Controller
+A controller used to handle forms makes use of practically the same annotations you’ve already used in the
+previous recipes. So let’s get right to the code.
+package com.apress.springrecipes.court.web;
+...
+@Controller
+@RequestMapping("/reservationForm")Chapter 3 ■ Spring MVC
+153
+@SessionAttributes("reservation")
+public class ReservationFormController {
+private final ReservationService reservationService;
+@Autowired
+public ReservationFormController(ReservationService reservationService) {
+this.reservationService = reservationService;
+}
+@RequestMapping(method = RequestMethod.GET)
+public String setupForm(Model model) {
+Reservation reservation = new Reservation();
+model.addAttribute("reservation", reservation);
+return "reservationForm";
+}
+@RequestMapping(method = RequestMethod.POST)
+public String submitForm(
+@ModelAttribute("reservation") Reservation reservation,
+BindingResult result, SessionStatus status) {
+reservationService.make(reservation);
+return "redirect:reservationSuccess";
+}
+}
+The controller starts by using the standard @Controller annotation, as well as the @RequestMapping
+annotation that allows access to the controller through the following URL:
+http://localhost:8080/court/reservationForm
+When you enter this URL in your browser, it will send an HTTP GET request to your web application.
+This in turn triggers the execution of the setupForm method, which is designated to handle this type of
+request based on its @RequestMapping annotation.
+The setupForm method defines a Model object as an input parameter, which serves to send model
+data to the view (i.e., the form). Inside the handler method, an empty Reservation object is created that is
+added as an attribute to the controller’s Model object. Then the controller returns the execution flow to the
+reservationForm view, which in this case is resolved to reservationForm.jsp (i.e., the form).
+The most important aspect of this last method is the addition of an empty Reservation object. If
+you analyze the form reservationForm.jsp, you will notice the <form:form> tag declares the attribute
+modelAttribute="reservation". This means that upon rendering the view, the form expects an object
+named reservation to be available, which is achieved by placing it inside the handler method’s Model. In
+fact, further inspection reveals that the path values for each <form:input> tag correspond to the field names
+belonging to the Reservation object. Since the form is being loaded for the first time, it should be evident
+that an empty Reservation object is expected.
+Another aspect that is vital to describe prior to analyzing the other controller handler method is the
+@SessionAttributes("reservation") annotation—declared at the top of the controller class. Since it’s
+possible for a form to contain errors, it can be an inconvenience to lose whatever valid data was already
+provided by a user on every subsequent submission. To solve this problem, the @SessionAttributes
+annotation is used to save a reservation field to a user’s session so that any future reference to the reservation
+field is in fact made on the same reference, whether a form is submitted twice or more times. This is also theChapter 3 ■ Spring MVC
+154
+reason why only a single Reservation object is created and assigned to the reservation field in the entire
+controller. Once the empty Reservation object is created—inside the HTTP GET handler method—all
+actions are made on the same object, since it’s assigned to a user’s session.
+Now let’s turn our attention to submitting the form for the first time. After you have filled in the
+form fields, submitting the form triggers an HTTP POST request, which in turn invokes the submitForm
+method—on account of this method’s @RequestMapping value. The input fields declared for the submitForm
+method are three. The @ModelAttribute("reservation") Reservation reservation is used to reference
+the reservation object. The BindingResult object contains newly submitted data by the user. The
+SessionStatus object is used so that it is possible to mark the processing as completed, after which the
+Reservation object will be removed from the HttpSession.
+At this juncture, the handler method doesn’t incorporate validation or perform access to a user’s
+session, which is the purpose of the BindingResult object and SessionStatus object—we will describe and
+incorporate them shortly.
+The only operation performed by the handler method is reservationService.make(reservation);.
+This operation invokes the reservation service using the current state of the reservation object. Generally,
+controller objects are first validated prior to performing this type of operation on them. Finally, note the
+handler method returns a view named redirect:reservationSuccess. The actual name of the view in this
+case is reservationSuccess, which is resolved to the reservationSuccess.jsp page you created earlier.
+The redirect: prefix in the view name is used to avoid a problem known as duplicate form submission.
+When you refresh the web page in the form success view, the form you just submitted is resubmitted.
+To avoid this problem, you can apply the post/redirect/get design pattern, which recommends redirecting
+to another URL after a form submission is handled successfully, instead of returning an HTML page directly.
+This is the purpose of prefixing a view name with redirect:.
+Initialize a Model Attribute Object and Prepopulate a Form with Values
+The form is designed to let users make reservations. However, if you analyze the Reservation domain class,
+you will note the form is still missing two fields to create a complete reservation object. One of these fields is
+the player field, which corresponds to a Player object. Per the Player class definition, a Player object has
+both a name field and a phone field.
+So, can the player field be incorporated into a form view and controller? Let’s analyze the form view first.
+<html>
+<head>
+<title>Reservation Form</title>
+</head>
+<body>
+<form method="post" modelAttribute="reservation">
+<table>
+...
+<tr>
+<td>Player Name</td>
+<td><form:input path="player.name" /></td>
+<td><form:errors path="player.name" cssClass="error" /></td>
+</tr>
+<tr>
+<td>Player Phone</td>
+<td><form:input path="player.phone" /></td>
+<td><form:errors path="player.phone" cssClass="error" /></td>
+</tr>Chapter 3 ■ Spring MVC
+155
+<tr>
+<td colspan="3"><input type="submit" /></td>
+</tr>
+</table>
+</form>
+</body>
+</html>
+Using a straightforward approach, you add two additional <form:input> tags to represent the Player
+object’s fields. Though these form declarations are simple, you also need to perform modifications to the
+controller. Recall that by using <form:input> tags, a view expects to have access to model objects passed by
+the controller that match the path value for <form:input> tags.
+Though the controller’s HTTP GET handler method returns an empty reservation named Reservation
+to this last view, the player property is null, so it causes an exception when rendering the form. To solve this
+problem, you have to initialize an empty Player object and assign it to the Reservation object returned to
+the view.
+@RequestMapping(method = RequestMethod.GET)
+public String setupForm(
+@RequestParam(required = false, value = "username") String username, Model model) {
+Reservation reservation = new Reservation();
+reservation.setPlayer(new Player(username, null));
+model.addAttribute("reservation", reservation);
+return "reservationForm";
+}
+In this case, after creating the empty Reservation object, the setPlayer method is used to assign it
+an empty Player object. Further note that the creation of the Person object relies on the username value.
+This particular value is obtained from the @RequestParam input value, which was also added to the handler
+method. By doing so, the Player object can be created with a specific username value passed in as a request
+parameter, resulting in the username form field being prepopulated with this value.
+So, for example, if a request to the form is made in the following manner:
+http://localhost:8080/court/reservationForm?username=Roger
+this allows the handler method to extract the username parameter to create the Player object, in turn
+prepopulating the form’s username form field with a Roger value. It’s worth noting that the @RequestParam
+annotation for the username parameter uses the property required=false; this allows a form request to be
+processed even if such a request parameter is not present.
+Provide Form Reference Data
+When a form controller is requested to render the form view, it may have some types of reference data to
+provide to the form (e.g., the items to display in an HTML selection). Now suppose you want to allow a user to
+select the sport type when reserving a court—which is the final unaccounted field for the Reservation class.
+<html>
+<head>
+<title>Reservation Form</title>
+</head>
+<body>
+<form method="post" modelAttribute="reservation">Chapter 3 ■ Spring MVC
+156
+<table>
+...
+<tr>
+<td>Sport Type</td>
+<td><form:select path="sportType" items="${sportTypes}"
+itemValue="id" itemLabel="name" /></td>
+<td><form:errors path="sportType" cssClass="error" /></td>
+</tr>
+<tr>
+<td colspan="3"><input type="submit" /></td>
+/<tr>
+</table>
+</form>
+</body>
+</html>
+The <form:select> tag provides a way to generate a drop-down list of values passed to the view by the
+controller. Thus, the form represents the sportType field as a set of HTML <select> elements, instead of the
+previous open-ended fields—<input>—that require a user to introduce text values.
+Next, let’s take a look at how the controller assigns the sportType field as a model attribute; the process
+is a little different from the previous fields.
+First let’s define the getAllSportTypes() method in the ReservationService interface for retrieving all
+available sport types.
+package com.apress.springrecipes.court.service;
+...
+public interface ReservationService {
+...
+public List<SportType> getAllSportTypes();
+}
+Then you can implement this method by returning a hard-coded list.
+package com.apress.springrecipes.court.service;
+...
+public class ReservationServiceImpl implements ReservationService {
+...
+public static final SportType TENNIS = new SportType(1, "Tennis");
+public static final SportType SOCCER = new SportType(2, "Soccer");
+public List<SportType> getAllSportTypes() {
+return Arrays.asList(TENNIS, SOCCER);
+}
+}
+Now that you have an implementation that returns a hard-coded list of SportType objects, let’s take a
+look at how the controller associates this list for it to be returned to the form view.
+package com.apress.springrecipes.court.service;
+.....
+@ModelAttribute("sportTypes")
+public List<SportType> populateSportTypes() {Chapter 3 ■ Spring MVC
+157
+return reservationService.getAllSportTypes();
+}
+@RequestMapping(method = RequestMethod.GET)
+public String setupForm(
+@RequestParam(required = false, value = "username") String username, Model model) {
+Reservation reservation = new Reservation();
+reservation.setPlayer(new Player(username, null));
+model.addAttribute("reservation", reservation);
+return "reservationForm";
+}
+Notice that the setupForm handler method charged with returning the empty Reservation object to the
+form view remains unchanged.
+The new addition and what is responsible for passing a SportType list as a model attribute to the form
+view is the method decorated with the @ModelAttribute("sportTypes") annotation. The @ModelAttribute
+annotation is used to define global model attributes, available to any returning view used in handler
+methods. In the same way, a handler method declares a Model object as an input parameter and assigns
+attributes that can be accessed in the returning view.
+Since the method decorated with the @ModelAttribute("sportTypes") annotation has a return type of
+List<SportType> and makes a call to reservationService.getAllSportTypes(), the hard-coded TENNIS
+and SOCCER SportType objects are assigned to the model attribute named sportTypes. This last model
+attribute is used in the form view to populate a drop-down list (i.e., <form:select> tag).
+Bind Properties of Custom Types
+When a form is submitted, a controller binds the form field values to the model object’s properties of the
+same name, in this case a Reservation object. However, for properties of custom types, a controller is not
+able to convert them unless you specify the corresponding property editors for them.
+For example, the sport type selection field only submits the selected sport type ID—as this is the
+way HTML <select> fields operate. Therefore, you have to convert this ID into a SportType object with
+a property editor. First, you require the getSportType() method in ReservationService to retrieve a
+SportType object by its ID.
+package com.apress.springrecipes.court.service;
+...
+public interface ReservationService {
+...
+public SportType getSportType(int sportTypeId);
+}
+For testing purposes, you can implement this method with a switch/case statement.
+package com.apress.springrecipes.court.service;
+...
+public class ReservationServiceImpl implements ReservationService {
+...
+public SportType getSportType(int sportTypeId) {
+switch (sportTypeId) {
+case 1:
+return TENNIS;Chapter 3 ■ Spring MVC
+158
+case 2:
+return SOCCER;
+default:
+return null;
+}
+}
+}
+Then you create the SportTypeConverter class to convert a sport type ID into a SportType object.
+This converter requires ReservationService to perform the lookup.
+package com.apress.springrecipes.court.domain;
+import com.apress.springrecipes.court.service.ReservationService;
+import org.springframework.core.convert.converter.Converter;
+public class SportTypeConverter implements Converter<String, SportType> {
+private ReservationService reservationService;
+public SportTypeConverter(ReservationService reservationService) {
+this.reservationService = reservationService;
+}
+@Override
+public SportType convert(String source) {
+int sportTypeId = Integer.parseInt(source);
+SportType sportType = reservationService.getSportType(sportTypeId);
+return sportType;
+}
+}
+Now that you have the supporting SportTypeConverter class required to bind form properties to a
+custom class like SportType, you need to associate it with the controller. For this purpose, you can use the
+addFormatters method from the WebMvcConfigurer.
+By overriding this method in your configuration class, custom types can be associated with a controller.
+This includes the SportTypeConverter class and other custom types like Date. Though we didn’t mention
+the date field earlier, it suffers from the same problem as the sport type selection field. A user introduces
+date fields as text values. For the controller to assign these text values to the Reservation object’s date field,
+this requires the date fields to be associated with a Date object. Given that the Date class is part of the Java
+language, it won’t be necessary to create a special class like SportTypeConverter. For this purpose, the
+Spring Framework already includes a custom class.
+Knowing you need to bind both the SportTypeConverter class and a Date class to the underlying
+controller, the following code illustrates the modifications to the configuration class:
+package com.apress.springrecipes.court.web.config;
+...
+import com.apress.springrecipes.court.domain.SportTypeConverter;
+import com.apress.springrecipes.court.service.ReservationService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.FormatterRegistry;
+import org.springframework.format.datetime.DateFormatter;Chapter 3 ■ Spring MVC
+159
+@Configuration
+@EnableWebMvc
+@ComponentScan("com.apress.springrecipes.court.web")
+public class WebConfiguration implements WebMvcConfigurer {
+@Autowired
+private ReservationService reservationService;
+@Override
+public void addFormatters(FormatterRegistry registry) {
+registry.addConverter(new SportTypeConverter(reservationService));
+}
+}
+The only field for this last class corresponds to reservationService, used to access the application’s
+ReservationService bean. Note the use of the @Autowired annotation that enables the injection of the
+bean. Next, you can find the addFormatters method used to bind the Date and SportTypeConverter
+classes. You can then find two calls to register the converter and formatter. These methods belong to the
+FormatterRegistry object, which is passed as an input parameter to the addFormatters method.
+The first call is used to bind a Date class to the DateFormatter class. The DateFormatter class is
+provided by the Spring Framework and offers functionality to parse and print Date objects.
+The second call is used to register the SportTypeConverter class. Since you created the
+SportTypeConverter class, you should know that its only input parameter is a ReservationService bean. By
+using this approach, every annotation-based controller (i.e., classes using the @Controller annotation) can
+have access to the same custom converters and formatters in their handler methods.
+Validate Form Data
+When a form is submitted, it’s standard practice to validate the data provided by a user before a submission
+is successful. Spring MVC supports validation by means of a validator object that implements the Validator
+interface. You can write the following validator to check whether the required form fields are filled and
+whether the reservation hour is valid on holidays and weekdays:
+package com.apress.springrecipes.court.domain;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.Errors;
+import org.springframework.validation.ValidationUtils;
+import org.springframework.validation.Validator;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+@Component
+public class ReservationValidator implements Validator {
+public boolean supports(Class<?> clazz) {
+return Reservation.class.isAssignableFrom(clazz);
+}
+public void validate(Object target, Errors errors) {
+ValidationUtils.rejectIfEmptyOrWhitespace(errors, "courtName",
+"required.courtName", "Court name is required.");Chapter 3 ■ Spring MVC
+160
+ValidationUtils.rejectIfEmpty(errors, "date",
+"required.date", "Date is required.");
+ValidationUtils.rejectIfEmpty(errors, "hour",
+"required.hour", "Hour is required.");
+ValidationUtils.rejectIfEmptyOrWhitespace(errors, "player.name",
+"required.playerName", "Player name is required.");
+ValidationUtils.rejectIfEmpty(errors, "sportType",
+"required.sportType", "Sport type is required.");
+Reservation reservation = (Reservation) target;
+LocalDate date = reservation.getDate();
+int hour = reservation.getHour();
+if (date != null) {
+if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+if (hour < 8 || hour > 22) {
+errors.reject("invalid.holidayHour", "Invalid holiday hour.");
+}
+} else {
+if (hour < 9 || hour > 21) {
+errors.reject("invalid.weekdayHour", "Invalid weekday hour.");
+}
+}
+}
+}
+}
+In this validator, you use utility methods such as rejectIfEmptyOrWhitespace() and rejectIfEmpty()
+in the ValidationUtils class to validate the required form fields. If any of these form fields are empty,
+these methods will create a field error and bind it to the field. The second argument of these methods is the
+property name, while the third and fourth are the error code and default error message.
+You also check whether the reservation hour is valid on holidays and weekdays. In case of invalidity, you
+should use the reject() method to create an object error to be bound to the reservation object, not to a field.
+Since the validator class is annotated with the @Component annotation, Spring attempts to instantiate the
+class as a bean in accordance with the class name, in this case reservationValidator.
+Since validators may create errors during validation, you should define messages for the error codes for
+displaying to the user. If you have ResourceBundleMessageSource defined, you can include the following error
+messages in your resource bundle for the appropriate locale (e.g., messages.properties for the default locale):
+required.courtName=Court name is required
+required.date=Date is required
+required.hour=Hour is required
+required.playerName=Player name is required
+required.sportType=Sport type is required
+invalid.holidayHour=Invalid holiday hour
+invalid.weekdayHour=Invalid weekday hour
+To apply this validator, you need to perform the following modification to your controller:
+package com.apress.springrecipes.court.service;
+.....
+private ReservationService reservationService;
+private ReservationValidator reservationValidator;Chapter 3 ■ Spring MVC
+161
+public ReservationFormController(ReservationService reservationService,
+ReservationValidator reservationValidator) {
+this.reservationService = reservationService;
+this.reservationValidator = reservationValidator;
+}
+@RequestMapping(method = RequestMethod.POST)
+public String submitForm(
+@ModelAttribute("reservation") @Validated Reservation reservation,
+BindingResult result, SessionStatus status) {
+if (result.hasErrors()) {
+return "reservationForm";
+} else {
+reservationService.make(reservation);
+return "redirect:reservationSuccess";
+}
+}
+@InitBinder
+public void initBinder(WebDataBinder binder) {
+binder.setValidator(reservationValidator);
+}
+The first addition to the controller is the ReservationValidator field, which gives the controller access
+to an instance of the validator bean.
+The next modification takes place in the HTTP POST handler method, which is always called when
+a user submits a form. Next to the @ModelAttribute annotation there is now an @Validated annotation,
+which triggers validation of the object. After the validation, the result parameter—the BindingResult
+object—contains the results for the validation process. Next, a conditional based on the value of result.
+hasErrors() is made. If the validation class detects errors, this value is true.
+If errors are detected in the validation process, the method handler returns the view
+reservationForm, which corresponds to the same form so a user can resubmit information. If no errors
+are detected in the validation process, a call is made to perform the reservation— reservationService.
+make(reservation);—followed by a redirection to the success view reservationSuccess.
+The registration of the validator is done in the @InitBinder annotated method, and the validator is
+set on the WebDataBinder so that it can be used after binding. To register the validator, you need to use the
+setValidator method. You can also register multiple validators using the addValidators method, which
+takes a varargs argument for one or more Validator instances.
+■ Note the WebDataBinder can also be used to register additional ProperyEditor, Converter, and
+Formatter instances for type conversion. this can be used instead of registering global PropertyEditors,
+Converters, or Formatters.
+Expire a Controller’s Session Data
+To support the possibility of a form being submitted multiple times and not losing data provided by a user
+between submissions, the controller relies on the use of the @SessionAttributes annotation. By doing so, a
+reference to the reservation field represented as a Reservation object is saved between requests.Chapter 3 ■ Spring MVC
+162
+However, once a form is submitted successfully and a reservation is made, there is no point in keeping
+the Reservation object in a user’s session. In fact, if a user revisits the form within a short period of time,
+there is a possibility that remnants of this old Reservation object emerge if not removed.
+Values assigned using the @SessionAttributes annotation can be removed using the SessionStatus
+object, which is an object that can be passed as an input parameter to handler methods. The following code
+illustrates how to expire the controller’s session data:
+package com.apress.springrecipes.court.web;
+@Controller
+@RequestMapping("/reservationForm")
+@SessionAttributes("reservation")
+public class ReservationFormController {
+@RequestMapping(method = RequestMethod.POST)
+public String submitForm(
+@ModelAttribute("reservation") Reservation reservation,
+BindingResult result, SessionStatus status) {
+if (result.hasErrors()) {
+return "reservationForm";
+} else {
+reservationService.make(reservation);
+status.setComplete();
+return "redirect:reservationSuccess";
+}
+}
+}
+Once the handler method performs the reservation by calling reservationService.make(reservation);
+and right before a user is redirected to a success page, it becomes an ideal time in which expire a controller’s
+session data. This is done by calling the setComplete() method on the SessionStatus object. It’s that simple.
