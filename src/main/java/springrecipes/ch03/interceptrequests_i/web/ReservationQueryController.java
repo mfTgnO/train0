@@ -1,4 +1,4 @@
-package springrecipes.ch03.interceptrequests.web;
+package springrecipes.ch03.interceptrequests_i.web;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import springrecipes.ch03.domain.Reservation;
-import springrecipes.ch03.interceptrequests.service.ReservationService;
+import springrecipes.ch03.interceptrequests_i.service.ReservationService;
 
 import java.util.Collections;
 import java.util.List;

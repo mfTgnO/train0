@@ -1,9 +1,9 @@
-package springrecipes.ch03.interceptrequests.service.config;
+package springrecipes.ch03.interceptrequests_i.service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import springrecipes.ch03.interceptrequests.service.ReservationService;
-import springrecipes.ch03.interceptrequests.service.ReservationServiceImpl;
+import springrecipes.ch03.interceptrequests_i.service.ReservationService;
+import springrecipes.ch03.interceptrequests_i.service.ReservationServiceImpl;
 
 @Configuration
 public class ServiceConfiguration {

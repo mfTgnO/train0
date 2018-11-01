@@ -1,4 +1,4 @@
-package springrecipes.ch03.interceptrequests.service;
+package springrecipes.ch03.interceptrequests_i.service;
 
 
 import springrecipes.ch03.domain.Reservation;

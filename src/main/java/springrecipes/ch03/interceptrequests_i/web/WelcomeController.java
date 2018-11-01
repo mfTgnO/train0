@@ -1,4 +1,4 @@
-package springrecipes.ch03.interceptrequests.web;
+package springrecipes.ch03.interceptrequests_i.web;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

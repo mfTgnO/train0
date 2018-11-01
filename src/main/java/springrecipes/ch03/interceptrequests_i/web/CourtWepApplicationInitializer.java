@@ -1,8 +1,8 @@
-package springrecipes.ch03.interceptrequests.web;
+package springrecipes.ch03.interceptrequests_i.web;
 
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
-import springrecipes.ch03.interceptrequests.service.config.ServiceConfiguration;
-import springrecipes.ch03.interceptrequests.web.config.WebConfiguration;
+import springrecipes.ch03.interceptrequests_i.service.config.ServiceConfiguration;
+import springrecipes.ch03.interceptrequests_i.web.config.WebConfiguration;
 
 public class CourtWepApplicationInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
     @Override
