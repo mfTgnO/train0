@@ -939,3 +939,493 @@ return "redirect:reservationSuccess";
 Once the handler method performs the reservation by calling reservationService.make(reservation);
 and right before a user is redirected to a success page, it becomes an ideal time in which expire a controller’s
 session data. This is done by calling the setComplete() method on the SessionStatus object. It’s that simple.
+
+-----------------------------------------------------------------------------
+3-10. Handle Multipage Forms with Wizard Form Controllers
+Problem
+In a web application, you sometimes have to deal with complex forms that span multiple pages. Forms like
+this are usually called wizard forms because users have to fill them page by page—just like using a software
+wizard. Undoubtedly, you can create one or more form controllers to handle a wizard form.
+Solution
+As there are multiple form pages for a wizard form, you have to define multiple page views for a wizard form
+controller. A controller then manages the form status across all these form pages. In a wizard form, there can
+also be a single controller handler method for form submissions, just like an individual form. However, to
+distinguish between a user’s action, a special request parameter needs to be embedded in each form, usually
+specified as the name of a submit button.
+`_finish`: Finish the wizard form.
+`_cancel`: Cancel the wizard form.
+`_targetx`: Step to the target page, where x is the zero-based page index.Chapter 3 ■ Spring MVC
+163
+Using these parameters, a controller’s handler method can determine what steps to take based on the
+form and user’s action.
+How It Works
+Suppose you want to provide a function that allows a user to reserve a court at fixed hours periodically.
+You first define the PeriodicReservation class in the domain subpackage.
+package com.apress.springrecipes.court.domain;
+...
+public class PeriodicReservation {
+private String courtName;
+private Date fromDate;
+private Date toDate;
+private int period;
+private int hour;
+private Player player;
+// Getters and Setters
+...
+}
+Then you add a makePeriodic() method to the ReservationService interface for making a periodic
+reservation.
+package com.apress.springrecipes.court.service;
+...
+public interface ReservationService {
+...
+public void makePeriodic(PeriodicReservation periodicReservation)
+throws ReservationNotAvailableException;
+}
+The implementation of this method involves generating a series of Reservation objects from
+PeriodicReservation and passing each reservation to the make() method. Obviously in this simple
+application, there’s no transaction management support.
+package com.apress.springrecipes.court.service;
+...
+public class ReservationServiceImpl implements ReservationService {
+...
+@Override
+public void makePeriodic(PeriodicReservation periodicReservation)
+throws ReservationNotAvailableException {
+LocalDate fromDate = periodicReservation.getFromDate();Chapter 3 ■ Spring MVC
+164
+while (fromDate.isBefore(periodicReservation.getToDate())) {
+Reservation reservation = new Reservation();
+reservation.setCourtName(periodicReservation.getCourtName());
+reservation.setDate(fromDate);
+reservation.setHour(periodicReservation.getHour());
+reservation.setPlayer(periodicReservation.getPlayer());
+make(reservation);
+fromDate = fromDate.plusDays(periodicReservation.getPeriod());
+}
+}
+}
+Create Wizard Form Pages
+Suppose you want to show users the periodic reservation form split across three different pages. Each page
+has a portion of the form fields. The first page is reservationCourtForm.jsp, which contains only the court
+name field for the periodic reservation.
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+<html>
+<head>
+<title>Reservation Court Form</title>
+<style>
+.error {
+color: #ff0000;
+font-weight: bold;
+}
+</style>
+</head>
+<body>
+<form:form method="post" modelAttribute="reservation">
+<table>
+<tr>
+<td>Court Name</td>
+<td><form:input path="courtName" /></td>
+<td><form:errors path="courtName" cssClass="error" /></td>
+</tr>
+<tr>
+<td colspan="3">
+<input type="hidden" value="0" name="_page" />
+<input type="submit" value="Next" name="_target1" />
+<input type="submit" value="Cancel" name="_cancel" />
+</td>
+</tr>
+</table>
+</form:form>
+</body>
+</html>Chapter 3 ■ Spring MVC
+165
+The form and input fields in this page are defined with Spring’s <form:form> and <form:input>
+tags. They are bound to the model attribute reservation and its properties. There’s also an error tag for
+displaying the field error message to the user. Note that there are two submit buttons in this page. The Next
+button’s name must be _target1. It asks the wizard form controller to step forward to the second page,
+whose page index is 1 (zero-based). The Cancel button’s name must be _cancel. It asks the controller to
+cancel this form. In addition, there is also a hidden form field to keep track of the page a user is on; in this
+case, it corresponds to 0.
+The second page is reservationTimeForm.jsp. It contains the date and time fields for a periodic
+reservation.
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+<html>
+<head>
+<title>Reservation Time Form</title>
+<style>
+.error {
+color: #ff0000;
+font-weight: bold;
+}
+</style>
+</head>
+<body>
+<form:form method="post" modelAttribute="reservation">
+<table>
+<tr>
+<td>From Date</td>
+<td><form:input path="fromDate" /></td>
+<td><form:errors path="fromDate" cssClass="error" /></td>
+</tr>
+<tr>
+<td>To Date</td>
+<td><form:input path="toDate" /></td>
+<td><form:errors path="toDate" cssClass="error" /></td>
+</tr>
+<tr>
+<td>Period</td>
+<td><form:select path="period" items="${periods}" /></td>
+<td><form:errors path="period" cssClass="error" /></td>
+</tr>
+<tr>
+<td>Hour</td>
+<td><form:input path="hour" /></td>
+<td><form:errors path="hour" cssClass="error" /></td>
+</tr>
+<tr>
+<td colspan="3">
+<input type="hidden" value="1" name="_page"/>
+<input type="submit" value="Previous" name="_target0" />
+<input type="submit" value="Next" name="_target2" />Chapter 3 ■ Spring MVC
+166
+<input type="submit" value="Cancel" name="_cancel" />
+</td>
+</tr>
+</table>
+</form:form>
+</body>
+</html>
+There are three submit buttons in this form. The names of the Previous and Next buttons must be
+_target0 and _target2, respectively. They ask the wizard form controller to step to the first page and the
+third page. The Cancel button asks the controller to cancel this form. In addition, there is a hidden form field
+to keep track of the page a user is on; in this case, it corresponds to 1.
+The third page is reservationPlayerForm.jsp. It contains the player information fields for a periodic
+reservation.
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+<html>
+<head>
+<title>Reservation Player Form</title>
+<style>
+ .error {
+ color: #ff0000;
+ font-weight: bold;
+ }
+</style>
+</head>
+<body>
+<form:form method="POST" commandName="reservation">
+<table>
+<tr>
+<td>Player Name</td>
+<td><form:input path="player.name" /></td>
+<td><form:errors path="player.name" cssClass="error" /></td>
+</tr>
+<tr>
+<td>Player Phone</td>
+<td><form:input path="player.phone" /></td>
+<td><form:errors path="player.phone" cssClass="error" /></td>
+</tr>
+<tr>
+<td colspan="3">
+<input type="hidden" value="2" name="_page"/>
+<input type="submit" value="Previous" name="_target1" />
+<input type="submit" value="Finish" name="_finish" />
+<input type="submit" value="Cancel" name="_cancel" />
+</td>
+</tr>
+</table>
+</form:form>
+</body>
+</html>Chapter 3 ■ Spring MVC
+167
+There are three submit buttons in this form. The Previous button asks the wizard form controller to step
+back to the second page. The Finish button’s name must be _finish. It asks the controller to finish this form.
+The Cancel button asks the controller to cancel this form. In addition, there is a hidden form field to keep
+track of the page a user is on; in this case, it corresponds to 2.
+Create a Wizard Form Controller
+Now let’s create a wizard form controller to handle this periodic reservation form. Like the previous Spring
+MVC controllers, this controller has four main handler methods—one for HTTP GET requests and others for
+HTTP POST requests—as well as makes use of the same controller elements (e.g., annotations, validation, or
+sessions) used in prior controllers. For a wizard form controller, all the form fields in different pages are bound
+to a single model attribute’s Reservation object, which is stored in a user’s session across multiple requests.
+package com.apress.springrecipes.court.web;
+import com.apress.springrecipes.court.domain.PeriodicReservation;
+import com.apress.springrecipes.court.domain.Player;
+import com.apress.springrecipes.court.service.ReservationService;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.support.SessionStatus;
+import org.springframework.web.util.WebUtils;
+import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+@Controller
+@RequestMapping("/periodicReservationForm")
+@SessionAttributes("reservation")
+public class PeriodicReservationController {
+ private final Map<Integer, String> pageForms = new HashMap<>(3);
+ private final ReservationService reservationService;
+ public PeriodicReservationController(ReservationService reservationService) {
+ this.reservationService = reservationService;
+ }
+@PostConstruct
+public void initialize() {
+pageForms.put(0, "reservationCourtForm");
+pageForms.put(1, "reservationTimeForm");
+pageForms.put(2, "reservationPlayerForm");
+}Chapter 3 ■ Spring MVC
+168
+@GetMapping
+public String setupForm(Model model) {
+PeriodicReservation reservation = new PeriodicReservation();
+reservation.setPlayer(new Player());
+model.addAttribute("reservation", reservation);
+return "reservationCourtForm";
+}
+@PostMapping(params = {"_cancel"})
+public String cancelForm(@RequestParam("_page") int currentPage) {
+return pageForms.get(currentPage);
+}
+@PostMapping(params = {"_finish"})
+public String completeForm(
+@ModelAttribute("reservation") PeriodicReservation reservation,
+BindingResult result, SessionStatus status,
+@RequestParam("_page") int currentPage) {
+if (!result.hasErrors()) {
+reservationService.makePeriodic(reservation);
+status.setComplete();
+return "redirect:reservationSuccess";
+} else {
+return pageForms.get(currentPage);
+}
+}
+@PostMapping
+public String submitForm(
+HttpServletRequest request,
+@ModelAttribute("reservation") PeriodicReservation reservation,
+BindingResult result, @RequestParam("_page") int currentPage) {
+int targetPage = getTargetPage(request, "_target", currentPage);
+if (targetPage < currentPage) {
+return pageForms.get(targetPage);
+}
+if (!result.hasErrors()) {
+return pageForms.get(targetPage);
+} else {
+return pageForms.get(currentPage);
+}
+}
+@ModelAttribute("periods")
+public Map<Integer, String> periods() {Chapter 3 ■ Spring MVC
+169
+Map<Integer, String> periods = new HashMap<Integer, String>();
+periods.put(1, "Daily");
+periods.put(7, "Weekly");
+return periods;
+}
+private int getTargetPage(HttpServletRequest request, String paramPrefix, int currentPage) {
+Enumeration<String> paramNames = request.getParameterNames();
+while (paramNames.hasMoreElements()) {
+String paramName = paramNames.nextElement();
+if (paramName.startsWith(paramPrefix)) {
+for (int i = 0; i < WebUtils.SUBMIT_IMAGE_SUFFIXES.length; i++) {
+String suffix = WebUtils.SUBMIT_IMAGE_SUFFIXES[i];
+if (paramName.endsWith(suffix)) {
+paramName = paramName.substring(0, paramName.length() -
+suffix.length());
+}
+}
+return Integer.parseInt(paramName.substring(paramPrefix.length()));
+}
+}
+return currentPage;
+}
+}
+This controller uses some of the same elements used in the previous ReservationFormController
+controller, so we won’t go into specifics about what’s already been explained. But to recap, it uses the
+@SessionAttributes annotation to place the reservation object in a user’s session. It has the same HTTP
+GET method used to assign empty Reservation and Player objects upon loading the first form view.
+Next, the controller defines a HashMap in which it associates page numbers to view names. This HashMap
+is used various times in the controller since the controller needs to determine target views for a variety of
+scenarios (e.g., validation or a user clicking Cancel or Next).
+You can also find the method decorated with the @ModelAttribute("periods") annotation. As it
+was illustrated in previous controllers, this declaration allows a list of values to be made available to any
+returning view placed in the controller. If you look at the previous form reservationTimeForm.jsp, you can
+see that it expects to have access to a model attribute named periods.
+Then you can find that the first @PostMapping will be called if the incoming request has the _cancel
+parameter in the URL. It also tries to extract the currentPage value by extracting the page attribute from
+the request using @RequestParam("page"). When this method is called, it returns control to the view
+corresponding to the currentPage value. The result is that the input is reset to the input prior to changing
+the content of the input fields.
+The next @PostMapping(params={"_finish"}) will be called if the incoming request has the _finish
+parameter in the URL, which is the case if the user clicked the Finish button. As this is the final step in the
+process, you want to validate the Reservation object, and for that you annotate the attribute with @Validated.
+When there are no errors, the handler method makes the reservation by calling reservationService.
+makePeriodic(reservation); and redirects the user to the reservationSuccess view.Chapter 3 ■ Spring MVC
+170
+The final handler method with @PostMapping handles the remaining cases and declares an input
+parameter for the HttpServletRequest, allowing the handler method to access this object’s contents.
+Previous handler methods used parameters such as @RequestParam to input data typically located
+in these standard objects, as a shortcut mechanism. It demonstrates that full access to the standard
+HttpServletRequest and HttpServletResponse objects inside a handler method is possible. The names
+and notation for the remaining input parameters should be familiar to you from earlier controllers. If this
+handler method is called, it means the user clicked either the Next or Previous button on either of the forms.
+As a consequence, this means that inside the HttpServletRequest object there is a parameter named
+_target. This is because each of the form’s Next and Previous buttons is assigned this parameter.
+Using the getTargetPage method, the value for the _target parameter is extracted, which corresponds
+to either target0, target1, or target2 and is trimmed to 0, 1, or 2 representing the target page.
+Once you have the target page number and the current page number, you can determine whether the
+user clicked the Next or Previous button. If the target page is lower than the current page, this means the
+user clicked the Previous button. If the target page number is greater than the current page number, this
+means the user clicked the Next button.
+At this juncture, it isn’t clear why you need to determine whether a user clicked the Next or Previous
+button, especially since a view corresponding to the target page is always returned. But the reason behind
+this logic is the following: if a user clicked the Next button, you will want to validate the data, whereas if a
+user clicked the Previous button, there is no need to validate anything. This will become obvious in the next
+section when validation is incorporated into the controller.
+As you have the PeriodicReservationController class decorated with the @RequestMapping
+("/periodicReservationForm") annotation, you can access this controller through the following URL:
+http://localhost:8080/court/periodicReservation
+Validate Wizard Form Data
+In a simple form controller, you validate the entire model attribute object in one shot when the form is
+submitted. However, as there are multiple form pages for a wizard form controller, you have to validate each
+page when it’s submitted. For this reason, you create the following validator, which splits the validate()
+method into several fine-grained validate methods, each of which validates fields in a particular page:
+package com.apress.springrecipes.court.domain;
+import org.springframework.validation.Errors;
+import org.springframework.validation.ValidationUtils;
+import org.springframework.validation.Validator;
+public class PeriodicReservationValidator implements Validator {
+public boolean supports(Class clazz) {
+return PeriodicReservation.class.isAssignableFrom(clazz);
+}
+public void validate(Object target, Errors errors) {
+validateCourt(target, errors);
+validateTime(target, errors);
+validatePlayer(target, errors);
+}Chapter 3 ■ Spring MVC
+171
+public void validateCourt(Object target, Errors errors) {
+ValidationUtils.rejectIfEmptyOrWhitespace(errors, "courtName",
+"required.courtName", "Court name is required.");
+}
+public void validateTime(Object target, Errors errors) {
+ValidationUtils.rejectIfEmpty(errors, "fromDate",
+"required.fromDate", "From date is required.");
+ValidationUtils.rejectIfEmpty(errors, "toDate", "required.toDate",
+"To date is required.");
+ValidationUtils.rejectIfEmpty(errors, "period",
+"required.period", "Period is required.");
+ValidationUtils.rejectIfEmpty(errors, "hour", "required.hour",
+"Hour is required.");
+}
+public void validatePlayer(Object target, Errors errors) {
+ValidationUtils.rejectIfEmptyOrWhitespace(errors, "player.name",
+"required.playerName", "Player name is required.");
+}
+}
+Similar to the earlier validator example, notice that this validator also relies on the @Component
+annotation to automatically register the validator class as a bean. Once the validator bean is registered, the
+only thing left to do is incorporate the validator into the controller.
+package com.apress.springrecipes.court.web;
+import com.apress.springrecipes.court.domain.PeriodicReservation;
+import com.apress.springrecipes.court.domain.PeriodicReservationValidator;
+import com.apress.springrecipes.court.domain.Player;
+import com.apress.springrecipes.court.service.ReservationService;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.support.SessionStatus;
+import org.springframework.web.util.WebUtils;
+import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;Chapter 3 ■ Spring MVC
+172
+@Controller
+@RequestMapping("/periodicReservationForm")
+@SessionAttributes("reservation")
+public class PeriodicReservationController {
+private final Map<Integer, String> pageForms = new HashMap<>(3);
+private final ReservationService reservationService;
+private final PeriodicReservationValidator validator;
+public PeriodicReservationController(ReservationService reservationService,
+PeriodicReservationValidator
+periodicReservationValidator) {
+this.reservationService = reservationService;
+this.validator = periodicReservationValidator;
+}
+@InitBinder
+public void initBinder(WebDataBinder binder) {
+binder.setValidator(this.validator);
+}
+@PostMapping(params = {"_finish"})
+public String completeForm(
+@Validated @ModelAttribute("reservation") PeriodicReservation reservation,
+BindingResult result, SessionStatus status,
+@RequestParam("_page") int currentPage) {
+if (!result.hasErrors()) {
+reservationService.makePeriodic(reservation);
+status.setComplete();
+return "redirect:reservationSuccess";
+} else {
+return pageForms.get(currentPage);
+}
+}
+@PostMapping
+public String submitForm(
+HttpServletRequest request,
+@ModelAttribute("reservation") PeriodicReservation reservation,
+BindingResult result, @RequestParam("_page") int currentPage) {
+int targetPage = getTargetPage(request, "_target", currentPage);
+if (targetPage < currentPage) {
+return pageForms.get(targetPage);
+}
+validateCurrentPage(reservation, result, currentPage);
+if (!result.hasErrors()) {
+return pageForms.get(targetPage);
+} else {
+return pageForms.get(currentPage);
+}
+}Chapter 3 ■ Spring MVC
+173
+private void validateCurrentPage(PeriodicReservation reservation,
+BindingResult result, int currentPage) {
+switch (currentPage) {
+case 0:
+validator.validateCourt(reservation, result);
+break;
+case 1:
+validator.validateTime(reservation, result);
+break;
+case 2:
+validator.validatePlayer(reservation, result);
+break;
+}
+}
+...
+}
+The first addition to the controller is the validator field that is assigned an instance of the
+PeriodicReservationValidator validator bean via the class’s constructor. You can then find two references
+to the validator in the controller.
+The first one is when a user finishes submitting a form. To call the validator, you need to add the
+@Validated annotation to the method’s Reservation argument. To make that actually do something, you
+also need to add an @InitBinder annotated method, which registers the PeriodicReservationValidator
+with the data binder. If the validator returns no errors, the reservation is committed, a user’s session is
+reset, and the user is redirected to the reservationSuccess view. If the validator returns errors, a user is sent
+to the current view form to correct the errors. (See also recipe 3-9.)
+The second occasion the validator is used in the controller is when a user clicks the Next button on
+a form. Since a user is attempting to advance to the next form, it’s necessary to validate whatever data a
+user provided. Given there are three possible form views to validate, a case statement is used to determine
+what validator method to invoke. Once the execution of a validator method returns, if errors are detected, a
+user is sent to the currentPage view to can correct the errors; if no errors are detected, a user is sent to the
+targetPage view; note that these target pages numbers are mapped to a Map in the controller.
