@@ -1,4 +1,5 @@
 developasimplewebapplication:3-1. Develop a Simple Web Application with Spring MVC
-handleformswithcontrollers:3-9. Handle Forms with Controllers
-interceptrequests:3-3. Intercept Requests with Handler Interceptors
 maprequests:3-2. Map Requests with @RequestMapping
+interceptrequests:3-3. Intercept Requests with Handler Interceptors
+resolveuserlocales：3-4. Resolve User Locales
+handleformswithcontrollers:3-9. Handle Forms with Controllers
