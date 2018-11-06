@@ -1,5 +1,4 @@
-/*
-package springrecipes.ch03.interceptrequests_i.web.config;
+package springrecipes.ch03.resolveuserlocales.web.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -10,7 +9,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @Configuration
 @EnableWebMvc
-@ComponentScan("springrecipes.ch03.interceptrequests_i")
+@ComponentScan("springrecipes.ch03.resolveuserlocales")
 public class WebConfiguration {
     @Bean
     public ViewResolver internalResourceViewResolver() {
@@ -20,4 +19,3 @@ public class WebConfiguration {
         return viewResolver;
     }
 }
-*/

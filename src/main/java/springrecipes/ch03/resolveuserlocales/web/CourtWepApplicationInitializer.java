@@ -1,10 +1,8 @@
-/*
-package springrecipes.ch03.interceptrequests_i.web;
+package springrecipes.ch03.resolveuserlocales.web;
 
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
-import springrecipes.ch03.interceptrequests_i.service.config.ServiceConfiguration;
-import springrecipes.ch03.interceptrequests_i.web.config.WebConfiguration;
-
+import springrecipes.ch03.resolveuserlocales.service.service.ServiceConfiguration;
+import springrecipes.ch03.resolveuserlocales.web.config.WebConfiguration;
 
 public class CourtWepApplicationInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
     @Override
@@ -23,4 +21,3 @@ public class CourtWepApplicationInitializer extends AbstractAnnotationConfigDisp
         return new String[]{"/"};
     }
 }
-*/

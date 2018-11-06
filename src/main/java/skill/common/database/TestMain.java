@@ -1,3 +1,4 @@
+/*
 package skill.common.database;
 
 import com.alibaba.druid.pool.DruidDataSource;
@@ -60,26 +61,30 @@ public class TestMain {
     // Tomcat Jdbc Pool数据源
     static DataSource tomcatDataSource = getTomcatDataSource();
 
-    /**
+    */
+/**
      * 测试方式： 每种数据源配置信息尽量相同，以求结果更加准确
      * 每种数据源做10次、100次、500次、1000次、2000次、4000次、8000次查询操作 每种查询重复100次，查看100次执行时间的波动图
      * @param args
      * @throws IOException
      * @throws SQLException
-     */
+     *//*
+
     public static void main(String[] args) throws IOException, SQLException {
 
         TestDAO testDAO = new TestDAO();
         // 查询次数
         int count = 1000;
         System.out.println("查询次数为：" + count);
-        /*System.out.println();
+        */
+/*System.out.println();
         System.out.println("==========================c3p0 测试开始==========================");
         // 测试c3p0
         for (int i = 0; i < 100; i++) {
             queryC3p0(testDAO, c3p0DataSource, count);
         }
-        System.out.println("==========================c3p0 测试结束==========================");*/
+        System.out.println("==========================c3p0 测试结束==========================");*//*
+
         System.out.println();
         System.out.println("==========================Proxool 测试开始==========================");
         // 测试Proxool
@@ -88,12 +93,14 @@ public class TestMain {
         }
         System.out.println("==========================Proxool 测试结束==========================");
         System.out.println();
-        /*System.out.println("==========================Druid 测试开始==========================");
+        */
+/*System.out.println("==========================Druid 测试开始==========================");
         // 测试Druid
         for (int i = 0; i < 100; i++) {
             queryDruid(testDAO, druidDataSource, count);
         }
-        System.out.println("==========================Druid 测试结束==========================");*/
+        System.out.println("==========================Druid 测试结束==========================");*//*
+
         System.out.println();
         System.out.println("==========================Tomcat Jdbc Pool 测试开始==========================");
         // 测试Tomcat Jdbc Pool
@@ -103,13 +110,15 @@ public class TestMain {
         System.out.println("==========================Tomcat Jdbc Pool 测试结束==========================");
     }
 
-    /**
+    */
+/**
      * c3p0测试
      * @param testDAO
      * @param ds
      * @param count
      * @throws SQLException
-     */
+     *//*
+
     public static void queryC3p0(TestDAO testDAO, ComboPooledDataSource ds, int count) throws SQLException {
         // 查询10次以初始化连接池
         for (int i = 0; i < 10; i++) {
@@ -127,13 +136,15 @@ public class TestMain {
         System.out.println(endMillis - startMillis);
     }
 
-    /**
+    */
+/**
      * Proxxool测试
      * @param testDAO
      * @param ds
      * @param count
      * @throws SQLException
-     */
+     *//*
+
     public static void queryProxxool(TestDAO testDAO, ProxoolDataSource ds, int count) throws SQLException {
         // 查询10次以初始化连接池
         for (int i = 0; i < 10; i++) {
@@ -151,13 +162,15 @@ public class TestMain {
         System.out.println(endMillis - startMillis);
     }
 
-    /**
+    */
+/**
      * Druid测试
      * @param testDAO
      * @param ds
      * @param count
      * @throws SQLException
-     */
+     *//*
+
     public static void queryDruid(TestDAO testDAO, DruidDataSource ds, int count) throws SQLException {
         // 查询10次以初始化连接池
         for (int i = 0; i < 10; i++) {
@@ -175,13 +188,15 @@ public class TestMain {
         System.out.println(endMillis - startMillis);
     }
 
-    /**
+    */
+/**
      * Tomcat Jdbc Pool测试
      * @param testDAO
      * @param ds
      * @param count
      * @throws SQLException
-     */
+     *//*
+
     public static void queryTomcatJDBC(TestDAO testDAO, DataSource ds, int count) throws SQLException {
         // 查询10次以初始化连接池
         for (int i = 0; i < 10; i++) {
@@ -199,10 +214,12 @@ public class TestMain {
         System.out.println(endMillis - startMillis);
     }
 
-    /**
+    */
+/**
      * 获取c3p0数据源
      * @throws PropertyVetoException
-     */
+     *//*
+
     public static ComboPooledDataSource getC3p0DataSource() {
         // 设置参数
         ComboPooledDataSource cpds = new ComboPooledDataSource();
@@ -225,10 +242,12 @@ public class TestMain {
         return cpds;
     }
 
-    /**
+    */
+/**
      * 获取Druid数据源
      * @return
-     */
+     *//*
+
     public static DruidDataSource getDruidDataSource() {
         DruidDataSource dds = new DruidDataSource();
         dds.setUsername(user);
@@ -244,10 +263,12 @@ public class TestMain {
         return dds;
     }
 
-    /**
+    */
+/**
      * 获取Proxool数据源
      * @return
-     */
+     *//*
+
     public static ProxoolDataSource getProxoolDataSource() {
         ProxoolDataSource pds = new ProxoolDataSource();
         pds.setAlias("mysql");
@@ -264,10 +285,12 @@ public class TestMain {
         return pds;
     }
 
-    /**
+    */
+/**
      * 获取Apache tomcat jdbc pool数据源
      * @return
-     */
+     *//*
+
     public static DataSource getTomcatDataSource() {
         DataSource ds = new DataSource();
         ds.setUrl(jdbcUrl);
@@ -284,3 +307,4 @@ public class TestMain {
         return ds;
     }
 }
+*/

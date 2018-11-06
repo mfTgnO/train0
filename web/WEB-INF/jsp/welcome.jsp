@@ -17,6 +17,8 @@
 Today is <fmt:formatDate value="${today}" pattern="yyyy-MM-dd"/>
 <h2>Handling time : ${handlingTime} ms</h2>
 
+<br/>
+Locale : ${pageContext.response.locale}
 
 </body>
 </html>

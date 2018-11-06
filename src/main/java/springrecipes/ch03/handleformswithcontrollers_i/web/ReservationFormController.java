@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.handleformswithcontrollers_i.web;
 
 import org.springframework.stereotype.Controller;
@@ -46,3 +47,4 @@ public class ReservationFormController {
         return "redirect:reservationSuccess";
     }
 }
+*/
