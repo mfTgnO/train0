@@ -5,7 +5,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import springrecipes.ch04.domain.Members;
 import springrecipes.ch04.publishxml.service.MemberService;
-
+// http://localhost:8080/members.xml
 @Controller
 public class RestMemberController {
     private final MemberService memberService;

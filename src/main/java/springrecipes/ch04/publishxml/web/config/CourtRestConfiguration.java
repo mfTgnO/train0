@@ -19,6 +19,7 @@ import java.util.Collections;
 @EnableWebMvc
 @ComponentScan("springrecipes.ch04.publishxml")
 public class CourtRestConfiguration {
+    @Bean
     public View memberTemplate() {
         return new MarshallingView(jaxb2Marshaller());
     }
