@@ -1,4 +1,4 @@
-package springrecipes.ch04.publishxml.service;
+package springrecipes.ch04.publishxml_ii.service.config;
 
 import org.springframework.stereotype.Service;
 import springrecipes.ch04.domain.Member;
@@ -35,7 +35,7 @@ public class InMemoryMemberService implements MemberService {
     }
 
     @Override
-    public Collection<Member> finfAll() {
+    public Collection<Member> findAll() {
         return members.values();
     }
 

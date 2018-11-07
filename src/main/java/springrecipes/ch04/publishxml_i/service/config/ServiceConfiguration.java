@@ -1,9 +1,9 @@
-package springrecipes.ch04.publishxml.service.config;
+package springrecipes.ch04.publishxml_i.service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import springrecipes.ch04.publishxml.service.InMemoryMemberService;
-import springrecipes.ch04.publishxml.service.MemberService;
+import springrecipes.ch04.publishxml_i.service.InMemoryMemberService;
+import springrecipes.ch04.publishxml_i.service.MemberService;
 
 @Configuration
 public class ServiceConfiguration {

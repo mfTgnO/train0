@@ -1,4 +1,5 @@
-package springrecipes.ch04.publishxml.web.config;
+/*
+package springrecipes.ch04.publishxml_i.web.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -17,7 +18,7 @@ import java.util.Collections;
 
 @Configuration
 @EnableWebMvc
-@ComponentScan("springrecipes.ch04.publishxml")
+@ComponentScan("springrecipes.ch04.publishxml_i")
 public class CourtRestConfiguration {
     @Bean
     public View memberTemplate() {
@@ -37,3 +38,4 @@ public class CourtRestConfiguration {
         return new BeanNameViewResolver();
     }
 }
+*/

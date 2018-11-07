@@ -1,10 +1,10 @@
-package springrecipes.ch04.publishxml.web;
+package springrecipes.ch04.publishxml_i.web;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import springrecipes.ch04.domain.Members;
-import springrecipes.ch04.publishxml.service.MemberService;
+import springrecipes.ch04.publishxml_i.service.MemberService;
 // http://localhost:8080/members.xml
 @Controller
 public class RestMemberController {
