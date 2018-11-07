@@ -1,1431 +1,331 @@
-3-6. Resolve Views by Name
 Problem
-After a handler has finished handling a request, it returns a logical view name, in which case
-DispatcherServlet has to delegate control to a view template so the information is rendered. You want to
-define a strategy for DispatcherServlet to resolve views by their logical names.
+You want to publish an XML-based REST service with Spring.
 Solution
-In a Spring MVC application, views are resolved by one or more view resolver beans declared in the web
-application context. These beans have to implement the ViewResolver interface for DispatcherServlet to
-autodetect them. Spring MVC comes with several ViewResolver implementations for you to resolve views
-using different strategies.
+There are two possibilities when designing REST services in Spring. One involves publishing an application’s
+data as a REST service; the other involves accessing data from third-party REST services to be used in
+an application. This recipe describes how to publish an application’s data as a REST service. Recipe 4-2
+describes how to access data from third-party REST services. Publishing an application’s data as a REST
+service revolves around the use of the Spring MVC annotations @RequestMapping and @PathVariable.
+By using these annotations to decorate a Spring MVC handler method, a Spring application is capable of
+publishing an application’s data as a REST service.
+In addition, Spring supports a series of mechanisms to generate a REST service’s payload. This recipe
+will explore the simplest mechanism, which involves the use of Spring’s MarshallingView class. As the
+recipes in this chapter progress, you will learn about more advanced mechanisms supported by Spring to
+generate REST service payloads.Chapter 4 ■ Spring reSt
+184
 How It Works
-You will explore different view resolving strategies, starting with a naming template using a prefix and
-suffix to generate the actual name to resolving views based on the name from either an XML file or
-ResourceBundle. Finally you will learn how to use multiple ViewResolvers together.
-Resolve Views Based on a Template’s Name and Location
-The basic strategy of resolving views is to map them to a template’s name and location directly. The view
-resolver InternalResourceViewResolver maps each view name to an application’s directory by means of a
-prefix and a suffix declaration. To register InternalResourceViewResolver, you can declare a bean of this
-type in the web application context.
-@Bean
-public InternalResourceViewResolver viewResolver() {
-InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
-viewResolver.setPrefix("/WEB-INF/jsp/");
-viewResolver.setSuffix(".jsp");
-return viewResolver;
-}
-For example, InternalResourceViewResolver resolves the view names welcome and reservationQuery
-in the following way:
-welcome --> /WEB-INF/jsp/welcome.jsp
-reservationQuery --> /WEB-INF/jsp/reservationQuery.jsp
-The type of the resolved views can be specified by the viewClass property. By default,
-InternalResourceViewResolver resolves view names into view objects of type JstlView if the JSTL library
-(i.e., jstl.jar) is present in the classpath. So, you can omit the viewClass property if your views are JSP
-templates with JSTL tags.
-InternalResourceViewResolver is simple, but it can only resolve internal resource views that can be
-forwarded by the Servlet API’s RequestDispatcher (e.g., an internal JSP file or a servlet). As for other view
-types supported by Spring MVC, you have to resolve them using other strategies.Chapter 3 ■ Spring MVC
-142
-Resolve Views from an XML Configuration File
-Another strategy for resolving views is to declare them as Spring beans and resolve them by their bean
-names. You can declare the view beans in the same configuration file as the web application context, but it’s
-better to isolate them in a separate configuration file. By default, XmlViewResolver loads view beans from
-/WEB-INF/views.xml, but this location can be overridden through the location property.
-Configuration
-public class ViewResolverConfiguration implements WebMvcConfigurer, ResourceLoaderAware {
-private ResourceLoader resourceLoader;
-@Bean
-public ViewResolver viewResolver() {
-XmlViewResolver viewResolver = new XmlViewResolver();
-viewResolver.setLocation(resourceLoader.getResource("/WEB-INF/court-views.nl"));
-return viewResolver;
-}
-@Override
-public void setResourceLoader(ResourceLoader resourceLoader) {
-this.resourceLoader=resourceLoader;
-}
-}
-Note in the implementation of the ResourceLoaderAware interface, you need to load resources as
-the location property takes an argument of the type Resource. In a Spring XML file, the conversion from
-String to Resource is handled for you; however, when using a Java-based configuration, you have to do
-some additional work. In the court-views.xml configuration file, you can declare each view as a normal
-Spring bean by setting the class name and properties. In this way, you can declare any types of views
-(e.g., RedirectView and even custom view types).
-<beans xmlns="http://www.springframework.org/schema/beans"
-xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="http://www.springframework.org/schema/beans
-http://www.springframework.org/schema/beans/spring-beans.xsd">
-<bean id="welcome"
-class="org.springframework.web.servlet.view.JstlView">
-<property name="url" value="/WEB-INF/jsp/welcome.jsp" />
-</bean>
-<bean id="reservationQuery"
-class="org.springframework.web.servlet.view.JstlView">
-<property name="url" value="/WEB-INF/jsp/reservationQuery.jsp" />
-</bean>
-<bean id="welcomeRedirect"
-class="org.springframework.web.servlet.view.RedirectView">
-<property name="url" value="welcome" />
-</bean>
-</beans>Chapter 3 ■ Spring MVC
-143
-Resolve Views from a Resource Bundle
-In addition to an XML configuration file, you can declare view beans in a resource bundle.
-ResourceBundleViewResolver loads view beans from a resource bundle in the classpath root. Note that
-ResourceBundleViewResolver can also take advantage of the resource bundle capability to load view beans
-from different resource bundles for different locales.
-@Bean
-public ResourceBundleViewResolver viewResolver() {
-ResourceBundleViewResolver viewResolver = new ResourceBundleViewResolver();
-viewResolver.setBasename("court-views");
-return viewResolver;
-}
-As you specify court-views as the base name of ResourceBundleViewResolver, the resource bundle is
-court-views.properties. In this resource bundle, you can declare view beans in the format of properties.
-This type of declaration is equivalent to the XML bean declaration.
-welcome.(class)=org.springframework.web.servlet.view.JstlView
-welcome.url=/WEB-INF/jsp/welcome.jsp
-reservationQuery.(class)=org.springframework.web.servlet.view.JstlView
-reservationQuery.url=/WEB-INF/jsp/reservationQuery.jsp
-welcomeRedirect.(class)=org.springframework.web.servlet.view.RedirectView
-welcomeRedirect.url=welcome
-Resolve Views with Multiple Resolvers
-If you have a lot of views in your web application, it is often insufficient to choose only one view-resolving
-strategy. Typically, InternalResourceViewResolver can resolve most of the internal JSP views, but there are
-usually other types of views that have to be resolved by ResourceBundleViewResolver. In this case, you have
-to combine both strategies for view resolution.
-@Bean
-public ResourceBundleViewResolver viewResolver() {
-ResourceBundleViewResolver viewResolver = new ResourceBundleViewResolver();
-viewResolver.setOrder(0);
-viewResolver.setBasename("court-views");
-return viewResolver;
-}
-@Bean
-public InternalResourceViewResolver internalResourceViewResolver() {
-InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
-viewResolver.setOrder(1);
-viewResolver.setPrefix("/WEB-INF/jsp/");
-viewResolver.setSuffix(".jsp");
-return viewResolver;
-}Chapter 3 ■ Spring MVC
-144
-When choosing more than one strategy at the same time, it’s important to specify the resolving priority.
-You can set the order properties of the view resolver beans for this purpose. The lower-order value represents
-the higher priority. Note that you should assign the lowest priority to InternalResourceViewResolver
-because it always resolves a view no matter whether it exists. So, other resolvers will have no chance to resolve
-a view if they have lower priorities. Now the resource bundle court-views.properties should only contain
-the views that can’t be resolved by InternalResourceViewResolver (e.g., the redirect views).
-welcomeRedirect.(class)=org.springframework.web.servlet.view.RedirectView
-welcomeRedirect.url=welcome
-Use the Redirect Prefix
-If you have InternalResourceViewResolver configured in your web application context, it can resolve
-redirect views by using the redirect: prefix in the view name. Then the rest of the view name is treated
-as the redirect URL. For example, the view name redirect:welcome triggers a redirect to the relative URL
-welcome. You can also specify an absolute URL in the view name.
-
-
----------------------------------------------------------------------------
-3-7. Use Views and Content Negotiation
-Problem
-You are relying on extension-less URLs in your controllers—welcome and not welcome.html or welcome.pdf.
-You want to devise a strategy so the correct content and type are returned for all requests.
-Solution
-When a request is received for a web application, it contains a series of properties that allow the processing
-framework, in this case Spring MVC, to determine the correct content and type to return to the requesting
-party. The main two properties include the URL extension provided in a request and the HTTP Accept
-header. For example, if a request is made to a URL in the form /reservationSummary.xml, a controller is
-capable of inspecting the extension and delegating it to a logical view representing an XML view. However,
-the possibility can arise for a request to be made to a URL in the form /reservationSummary. Should this
-request be delegated to an XML view or an HTML view? Or perhaps some other type of view? It’s impossible
-to tell through the URL. But instead of deciding on a default view for such requests, a request can be
-inspected for its HTTP Accept header to decide what type of view is more appropriate.
-Inspecting HTTP Accept headers in a controller can be a messy process. So, Spring MVC supports the
-inspection of headers through ContentNegotiatingViewResolver, allowing view delegation to be made
-based on either a URL file extension or an HTTP Accept header value.
-How It Works
-The first thing you need to realize about Spring MVC content negotiation is that it’s configured as a resolver,
-just like those illustrated in recipe 3-6. The Spring MVC content negotiating resolver is based on the
-ContentNegotiatingViewResolver class. But before we describe how it works, we will illustrate how to
-configure and integrate it with other resolvers.Chapter 3 ■ Spring MVC
-145
-@Configuration
-ublic class ViewResolverConfiguration implements WebMvcConfigurer {
-@Autowired
-private ContentNegotiationManager contentNegotiationManager;
-@Override
-public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
-Map<String, MediaType> mediatypes = new HashMap<>();
-mediatypes.put("html", MediaType.TEXT_HTML);
-mediatypes.put("pdf", MediaType.valueOf("application/pdf"));
-mediatypes.put("xls", MediaType.valueOf("application/vnd.ms-excel"));
-mediatypes.put("xml", MediaType.APPLICATION_XML);
-mediatypes.put("json", MediaType.APPLICATION_JSON);
-configurer.mediaTypes(mediatypes);
-}
-@Bean
-public ContentNegotiatingViewResolver contentNegotiatingViewResolver() {
-ContentNegotiatingViewResolver viewResolver = new ContentNegotiatingViewResolver();
-viewResolver.setContentNegotiationManager(contentNegotiationManager);
-return viewResolver;
-}
-}
-First you need to configure content negotiation. The default configuration adds a
-ContentNegotiationManager, which can be configured by implementing the configureContentNegotiation
-method. To get access to the configured ContentNegotiationManager, you can simply autowire it in your
-configuration class.
-Turn your attention back to the ContentNegotiatingViewResolver resolver. This configuration sets
-up the resolver to have the highest priority among all resolvers, which is necessary to make the content
-negotiating resolver work. The reason for this resolver having the highest priority is that it does not resolve
-views themselves but rather delegates them to other view resolvers (which it automatically detects). Since a
-resolver that does not resolve views can be confusing, we will elaborate with an example.
-Let’s assume a controller receives a request for /reservationSummary.xml. Once the handler method
-finishes, it sends control to a logical view named reservation. At this point, Spring MVC resolvers come into
-play, the first of which is the ContentNegotiatingViewResolver resolver, since it has the highest priority.
-The ContentNegotiatingViewResolver resolver first determines the media type for a request
-based on the following criteria: it checks a request path extension (e.g., .html, .xml, or .pdf) against
-the default media types (e.g., text/html) specified by the mediaTypes map in the configuration of the
-ContentNegotiatingManager bean. If a request path has an extension but no match can be found in the
-default mediaTypes section, an attempt is made to determine an extension’s media type using FileTypeMap
-belonging to Java Activation Framework. If no extension is present in a request path, the HTTP Accept
-header of the request is used. For the case of a request made on /reservationSummary.xml, the media
-type is determined in step 1 to be application/xml. However, for a request made on a URL like /
-reservationSummary, the media type is not determined until step 3.
-The HTTP Accept header contains values such as Accept: text/html or Accept: application/pdf.
-These values help the resolver determine the media type a requester is expecting, given that no extension is
-present in the requesting URL.Chapter 3 ■ Spring MVC
-146
-At this juncture, the ContentNegotiatingViewResolver resolver has a media type and logical view named
-reservation. Based on this information, an iteration is performed over the remaining resolvers—based on
-their order—to determine what view best matches the logical name based on the detected media type.
-This process allows you to have multiple logical views with the same name, each supporting a
-different media type (e.g., HTML, PDF, or XLS), with ContentNegotiatingViewResolver resolving
-which is the best match. In such cases, a controller’s design is further simplified, since it won’t be
-necessary to hard-code the logical view necessary to create a certain media type (e.g., pdfReservation,
-xlsReservation, or htmlReservation) but instead a single view (e.g., reservation), letting the
-ContentNegotiatingViewResolver resolver determine the best match.
-A series of outcomes for this process can be the following:
-•	 The media type is determined to be application/pdf. If the resolver with the highest
-priority (lower order) contains a mapping to a logical view named reservation
-but such a view does not support the application/pdf type, no match occurs—the
-lookup process continues onto the remaining resolvers.
-•	 The media type is determined to be application/pdf. The resolver with the highest
-priority (lower order) containing a mapping to a logical view named reservation
-and having support for application/pdf is matched.
-•	 The media type is determined to be text/html. There are four resolvers with a
-logical view named reservation, but the views mapped to the two resolvers with
-highest priority do not support text/html. It’s the remaining resolver containing a
-mapping for a view named reservation that supports text/html that is matched.
-This search process for views automatically takes place on all the resolvers configured in an
-application. It’s also possible to configure—within the ContentNegotiatingViewResolver bean—
-default views and resolvers, in case you don’t want to fall back on configurations made outside the
-ContentNegotiatingViewResolver resolver.
-Recipe 3-11 will illustrate a controller that relies on the ContentNegotiatingViewResolver resolver to
-determine an application’s views.
-
-
------------------------------------------------------------------------------
-3-8. Map Exceptions to Views
-Problem
-When an unknown exception occurs, your application server usually displays the evil exception stack trace
-to the user. Your users have nothing to do with this stack trace and complain that your application is not user
-friendly. Moreover, it’s also a potential security risk, as you may expose the internal method call hierarchy to
-users. However, a web application’s web.xml can be configured to display friendly JSP pages in case an HTTP
-error or class exception occur. Spring MVC supports a more robust approach to managing views for class
-exceptions.
-Solution
-In a Spring MVC application, you can register one or more exception resolver beans in the web application
-context to resolve uncaught exceptions. These beans have to implement the HandlerExceptionResolver
-interface for DispatcherServlet to autodetect them. Spring MVC comes with a simple exception resolver
-for you to map each category of exceptions to a view.Chapter 3 ■ Spring MVC
-147
-How It Works
-Suppose your reservation service throws the following exception because of a reservation not being available:
-package com.apress.springrecipes.court.service;
-...
-public class ReservationNotAvailableException extends RuntimeException {
-private String courtName;
-private Date date;
-private int hour;
-// Constructors and Getters
-...
-}
-To resolve uncaught exceptions, you can write your custom exception resolver by implementing the
-HandlerExceptionResolver interface. Usually, you’ll want to map different categories of exceptions into
-different error pages. Spring MVC comes with the exception resolver SimpleMappingExceptionResolver for
-you to configure the exception mappings in the web application context. For example, you can register the
-following exception resolver in your configuration:
-@Override
-public void configureHandlerExceptionResolvers(List<HandlerExceptionResolver>
-exceptionResolvers) {
-exceptionResolvers.add(handlerExceptionResolver());
-}
-@Bean
-public HandlerExceptionResolver handlerExceptionResolver() {
-Properties exceptionMapping = new Properties();
-exceptionMapping.setProperty(
-ReservationNotAvailableException.class.getName(), "reservationNotAvailable");
-SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver();
-exceptionResolver.setExceptionMappings(exceptionMapping);
-exceptionResolver.setDefaultErrorView("error");
-return exceptionResolver;
-}
-In this exception resolver, you define the logical view name reservationNotAvailable for
-ReservationNotAvailableException. You can add any number of exception classes using the
-exceptionMappings property, all the way down to the more general exception class java.lang.Exception.
-In this manner, depending on the type of class exception, a user is served a view in accordance with the
-exception.
-The property defaultErrorView is used to define a default view named error, used if an exception
-class not mapped in the exceptionMapping element is raised.Chapter 3 ■ Spring MVC
-148
-Addressing the corresponding views, if the InternalResourceViewResolver is configured in your
-web application context, the following reservationNotAvailable.jsp page is shown if a reservation is
-not available:
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<html>
-<head>
-<title>Reservation Not Available</title>
-</head>
-<body>
-Your reservation for ${exception.courtName} is not available on <fmt:formatDate
-value="${exception.date}" pattern="yyyy-MM-dd" /> at ${exception.hour}:00.
-</body>
-In an error page, the exception instance can be accessed by the variable ${exception}, so you can show
-the user more details on this exception.
-It’s a good practice to define a default error page for any unknown exceptions. You can use the property
-defaultErrorView to define a default view or map a page to the key java.lang.Exception as the last entry
-of the mapping, so it will be shown if no other entry has been matched before. Then you can create this
-view’s JSP— error.jsp—as follows:
-<html>
-<head>
-<title>Error</title>
-</head>
-<body>
-An error has occurred. Please contact our administrator for details.
-</body>
-</html>
-Map Exceptions Using @ExceptionHandler
-Instead of configuring a HandlerExceptionResolver, you can annotate a method with @ExceptionHandler.
-It works in a similar way as the @RequestMapping annotation.
-@Controller
-@RequestMapping("/reservationForm")
-@SessionAttributes("reservation")
-public class ReservationFormController {
-@ExceptionHandler(ReservationNotAvailableException.class)
-public String handle(ReservationNotAvailableException ex) {
-return "reservationNotAvailable";
-}
-@ExceptionHandler
-public String handleDefault(Exception e) {
-return "error";
-}
-...
-}Chapter 3 ■ Spring MVC
-149
-You have here two methods annotated as @ExceptionHandler. The first is for handling the specific
-ReservationNotAvailableException; the second is the general (catchall) exception-handling method. You
-also don’t have to specify a HandlerExceptionResolver in the WebConfiguration anymore.
-Methods annotated with @ExceptionHandler can have a variety of return types (like the @RequestMapping
-methods); here you just return the name of the view that needs to be rendered, but you could also have
-returned a ModelAndView, a View, and so on.
-Although using @ExceptionHandler annotated methods is very powerful and flexible, there
-is a drawback when you put them in controllers. Those methods will work only for the controller
-they are defined in, so if you have an exception occurring in another controller (for instance, the
-WelcomeController), these methods won’t be called. Generic exception-handling methods have to be
-moved to a separate class, and that class has to be annotated with @ControllerAdvice.
-@ControllerAdvice
-public class ExceptionHandlingAdvice {
-@ExceptionHandler(ReservationNotAvailableException.class)
-public String handle(ReservationNotAvailableException ex) {
-return "reservationNotAvailable";
-}
-@ExceptionHandler
-public String handleDefault(Exception e) {
-return "error";
-}
-}
-This class will apply to all controllers in the application context, which is why it’s called @ControllerAdvice.
-
------------------------------------------------------------------------------
-3-9. Handle Forms with Controllers
-Problem
-In a web application, you often have to deal with forms. A form controller has to show a form to a user and
-also handle the form submission. Form handling can be a complex and variable task.
-Solution
-When a user interacts with a form, it requires support for two operations from a controller. First, when a form
-is initially requested, it asks the controller to show a form by an HTTP GET request, which renders the form
-view to the user. Then when the form is submitted, an HTTP POST request is made to handle things such
-as validation and business processing for the data present in the form. If the form is handled successfully, it
-renders the success view to the user. Otherwise, it renders the form view again with errors.
-How It Works
-Suppose you want to allow a user to make a court reservation by filling out a form. To give you a better idea
-of the data handled by a controller, we will introduce the controller’s view (i.e., the form) first.Chapter 3 ■ Spring MVC
-150
-Create a Form’s Views
-Let’s create the form view reservationForm.jsp. The form relies on Spring’s form tag library, as this
-simplifies a form’s data binding, display of error messages, and the redisplay of original values entered by the
-user in case of errors.
-<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
-<html>
-<head>
-<title>Reservation Form</title>
-<style>
-.error {
-color: #ff0000;
-font-weight: bold;
-}
-</style>
-</head>
-<body>
-<form:form method="post" modelAttribute="reservation">
-<form:errors path="*" cssClass="error" />
-<table>
-<tr>
-<td>Court Name</td>
-<td><form:input path="courtName" /></td>
-<td><form:errors path="courtName" cssClass="error" /></td>
-</tr>
-<tr>
-<td>Date</td>
-<td><form:input path="date" /></td>
-<td><form:errors path="date" cssClass="error" /></td>
-</tr>
-<tr>
-<td>Hour</td>
-<td><form:input path="hour" /></td>
-<td><form:errors path="hour" cssClass="error" /></td>
-</tr>
-<tr>
-<td colspan="3"><input type="submit" /></td>
-</tr>
-</table>
-</form:form>
-</body>
-</html>
-The Spring <form:form> declares two attributes. The method="post" attribute indicates that a form
-performs an HTTP POST request upon submission. The modelAttribute="reservation" attribute indicates
-that the form data is bound to a model named reservation. The first attribute should be familiar to you
-since it’s used on most HTML forms. The second attribute will become clearer once we describe the
-controller that handles the form.Chapter 3 ■ Spring MVC
-151
-Bear in mind the <form:form> tag is rendered into standard HTML before it’s sent to a user, so it’s not
-that modelAttribute="reservation" is of use to a browser; the attribute is used as a facility to generate the
-actual HTML form.
-Next, you can find the <form:errors> tag, used to define a location in which to place errors in case a
-form does not meet the rules set forth by a controller. The attribute path="*" is used to indicate the display
-of all errors—given the wildcard *—whereas the attribute cssClass="error" is used to indicate a CSS
-formatting class to display the errors.
-Next, you can find the form’s various <form:input> tags accompanied by another set of corresponding
-<form:errors> tags. These tags make use of the attribute path to indicate the form’s fields, which in this case
-are courtName, date, and hour.
-The <form:input> tags are bound to properties corresponding to modelAttribute by using the path
-attribute. They show the user the original value of the field, which will be either the bound property value or
-the value rejected because of a binding error. They must be used inside the <form:form> tag, which defines a
-form that binds to modelAttribute by its name.
-Finally, you can find the standard HTML tag <input type="submit" /> that generates a Submit button
-and trigger the sending of data to the server, followed by the </form:form> tag that closes out the form. If the
-form and its data are processed correctly, you need to create a success view to notify the user of a successful
-reservation. The reservationSuccess.jsp illustrated next serves this purpose:
-<html>
-<head>
-<title>Reservation Success</title>
-</head>
-<body>
-Your reservation has been made successfully.
-</body>
-</html>
-It’s also possible for errors to occur because of invalid values being submitted in a form. For example,
-if the date is not in a valid format or an alphabetic character is presented for hour, the controller is designed
-to reject such field values. The controller will then generate a list of selective error codes for each error to be
-returned to the form view, and the values are placed inside the <form:errors> tag.
-For example, for an invalid value input in the date field, the following error codes are generated by
-a controller:
-typeMismatch.command.date
-typeMismatch.date
-typeMismatch.java.time.LocalDate
-typeMismatch
-If you have a ResourceBundleMessageSource defined, you can include the following error messages in
-your resource bundle for the appropriate locale (e.g., messages.properties for the default locale):
-typeMismatch.date=Invalid date format
-typeMismatch.hour=Invalid hour format
-The corresponding error codes and their values are returned to a user if a failure occurs when
-processing form data.
-Now that you know the structure of the views involved with a form, as well as the data handled by it, let’s
-take a look at the logic that handles the submitted data (i.e., the reservation) in a form.Chapter 3 ■ Spring MVC
-152
-Create a Form’s Service Processing
-This is not the controller but rather the service used by the controller to process the form’s data reservation.
-First define a make() method in the ReservationService interface.
-package com.apress.springrecipes.court.service;
-...
-public interface ReservationService {
-...
-void make(Reservation reservation)
-throws ReservationNotAvailableException;
-}
-Then you implement this make() method by adding a Reservation item to the list that stores the
-reservations. You throw a ReservationNotAvailableException in case of a duplicate reservation.
-package com.apress.springrecipes.court.service;
-...
-public class ReservationServiceImpl implements ReservationService {
-...
-@Override
-public void make(Reservation reservation) throws ReservationNotAvailableException {
-long cnt = reservations.stream()
-.filter(made -> Objects.equals(made.getCourtName(), reservation.getCourtName()))
-.filter(made -> Objects.equals(made.getDate(), reservation.getDate()))
-.filter(made -> made.getHour() == reservation.getHour())
-.count();
-if (cnt > 0) {
-throw new ReservationNotAvailableException(reservation
-.getCourtName(), reservation.getDate(), reservation
-.getHour());
-} else {
-reservations.add(reservation);
-}
-}
-}
-Now that you have a better understanding of the two elements that interact with a controller—a form’s
-views and the reservation service class—let’s create a controller to handle the court reservation form.
-Create a Form’s Controller
-A controller used to handle forms makes use of practically the same annotations you’ve already used in the
-previous recipes. So let’s get right to the code.
+Publishing a web application’s data as a REST service (or as it’s more technically known in web services
+parlance, “creating an endpoint”) is strongly tied to Spring MVC, which you explored in Chapter 3. Since
+Spring MVC relies on the annotation @RequestMapping to decorate handler methods and define access
+points (i.e., URLs), it’s the preferred way in which to define a REST service’s endpoint.
+Use MarshallingView to Produce XML
+The following code illustrates a Spring MVC controller class with a handler method that defines a REST
+service endpoint:
 package com.apress.springrecipes.court.web;
-...
-@Controller
-@RequestMapping("/reservationForm")Chapter 3 ■ Spring MVC
-153
-@SessionAttributes("reservation")
-public class ReservationFormController {
-private final ReservationService reservationService;
-@Autowired
-public ReservationFormController(ReservationService reservationService) {
-this.reservationService = reservationService;
-}
-@RequestMapping(method = RequestMethod.GET)
-public String setupForm(Model model) {
-Reservation reservation = new Reservation();
-model.addAttribute("reservation", reservation);
-return "reservationForm";
-}
-@RequestMapping(method = RequestMethod.POST)
-public String submitForm(
-@ModelAttribute("reservation") Reservation reservation,
-BindingResult result, SessionStatus status) {
-reservationService.make(reservation);
-return "redirect:reservationSuccess";
-}
-}
-The controller starts by using the standard @Controller annotation, as well as the @RequestMapping
-annotation that allows access to the controller through the following URL:
-http://localhost:8080/court/reservationForm
-When you enter this URL in your browser, it will send an HTTP GET request to your web application.
-This in turn triggers the execution of the setupForm method, which is designated to handle this type of
-request based on its @RequestMapping annotation.
-The setupForm method defines a Model object as an input parameter, which serves to send model
-data to the view (i.e., the form). Inside the handler method, an empty Reservation object is created that is
-added as an attribute to the controller’s Model object. Then the controller returns the execution flow to the
-reservationForm view, which in this case is resolved to reservationForm.jsp (i.e., the form).
-The most important aspect of this last method is the addition of an empty Reservation object. If
-you analyze the form reservationForm.jsp, you will notice the <form:form> tag declares the attribute
-modelAttribute="reservation". This means that upon rendering the view, the form expects an object
-named reservation to be available, which is achieved by placing it inside the handler method’s Model. In
-fact, further inspection reveals that the path values for each <form:input> tag correspond to the field names
-belonging to the Reservation object. Since the form is being loaded for the first time, it should be evident
-that an empty Reservation object is expected.
-Another aspect that is vital to describe prior to analyzing the other controller handler method is the
-@SessionAttributes("reservation") annotation—declared at the top of the controller class. Since it’s
-possible for a form to contain errors, it can be an inconvenience to lose whatever valid data was already
-provided by a user on every subsequent submission. To solve this problem, the @SessionAttributes
-annotation is used to save a reservation field to a user’s session so that any future reference to the reservation
-field is in fact made on the same reference, whether a form is submitted twice or more times. This is also theChapter 3 ■ Spring MVC
-154
-reason why only a single Reservation object is created and assigned to the reservation field in the entire
-controller. Once the empty Reservation object is created—inside the HTTP GET handler method—all
-actions are made on the same object, since it’s assigned to a user’s session.
-Now let’s turn our attention to submitting the form for the first time. After you have filled in the
-form fields, submitting the form triggers an HTTP POST request, which in turn invokes the submitForm
-method—on account of this method’s @RequestMapping value. The input fields declared for the submitForm
-method are three. The @ModelAttribute("reservation") Reservation reservation is used to reference
-the reservation object. The BindingResult object contains newly submitted data by the user. The
-SessionStatus object is used so that it is possible to mark the processing as completed, after which the
-Reservation object will be removed from the HttpSession.
-At this juncture, the handler method doesn’t incorporate validation or perform access to a user’s
-session, which is the purpose of the BindingResult object and SessionStatus object—we will describe and
-incorporate them shortly.
-The only operation performed by the handler method is reservationService.make(reservation);.
-This operation invokes the reservation service using the current state of the reservation object. Generally,
-controller objects are first validated prior to performing this type of operation on them. Finally, note the
-handler method returns a view named redirect:reservationSuccess. The actual name of the view in this
-case is reservationSuccess, which is resolved to the reservationSuccess.jsp page you created earlier.
-The redirect: prefix in the view name is used to avoid a problem known as duplicate form submission.
-When you refresh the web page in the form success view, the form you just submitted is resubmitted.
-To avoid this problem, you can apply the post/redirect/get design pattern, which recommends redirecting
-to another URL after a form submission is handled successfully, instead of returning an HTML page directly.
-This is the purpose of prefixing a view name with redirect:.
-Initialize a Model Attribute Object and Prepopulate a Form with Values
-The form is designed to let users make reservations. However, if you analyze the Reservation domain class,
-you will note the form is still missing two fields to create a complete reservation object. One of these fields is
-the player field, which corresponds to a Player object. Per the Player class definition, a Player object has
-both a name field and a phone field.
-So, can the player field be incorporated into a form view and controller? Let’s analyze the form view first.
-<html>
-<head>
-<title>Reservation Form</title>
-</head>
-<body>
-<form method="post" modelAttribute="reservation">
-<table>
-...
-<tr>
-<td>Player Name</td>
-<td><form:input path="player.name" /></td>
-<td><form:errors path="player.name" cssClass="error" /></td>
-</tr>
-<tr>
-<td>Player Phone</td>
-<td><form:input path="player.phone" /></td>
-<td><form:errors path="player.phone" cssClass="error" /></td>
-</tr>Chapter 3 ■ Spring MVC
-155
-<tr>
-<td colspan="3"><input type="submit" /></td>
-</tr>
-</table>
-</form>
-</body>
-</html>
-Using a straightforward approach, you add two additional <form:input> tags to represent the Player
-object’s fields. Though these form declarations are simple, you also need to perform modifications to the
-controller. Recall that by using <form:input> tags, a view expects to have access to model objects passed by
-the controller that match the path value for <form:input> tags.
-Though the controller’s HTTP GET handler method returns an empty reservation named Reservation
-to this last view, the player property is null, so it causes an exception when rendering the form. To solve this
-problem, you have to initialize an empty Player object and assign it to the Reservation object returned to
-the view.
-@RequestMapping(method = RequestMethod.GET)
-public String setupForm(
-@RequestParam(required = false, value = "username") String username, Model model) {
-Reservation reservation = new Reservation();
-reservation.setPlayer(new Player(username, null));
-model.addAttribute("reservation", reservation);
-return "reservationForm";
-}
-In this case, after creating the empty Reservation object, the setPlayer method is used to assign it
-an empty Player object. Further note that the creation of the Person object relies on the username value.
-This particular value is obtained from the @RequestParam input value, which was also added to the handler
-method. By doing so, the Player object can be created with a specific username value passed in as a request
-parameter, resulting in the username form field being prepopulated with this value.
-So, for example, if a request to the form is made in the following manner:
-http://localhost:8080/court/reservationForm?username=Roger
-this allows the handler method to extract the username parameter to create the Player object, in turn
-prepopulating the form’s username form field with a Roger value. It’s worth noting that the @RequestParam
-annotation for the username parameter uses the property required=false; this allows a form request to be
-processed even if such a request parameter is not present.
-Provide Form Reference Data
-When a form controller is requested to render the form view, it may have some types of reference data to
-provide to the form (e.g., the items to display in an HTML selection). Now suppose you want to allow a user to
-select the sport type when reserving a court—which is the final unaccounted field for the Reservation class.
-<html>
-<head>
-<title>Reservation Form</title>
-</head>
-<body>
-<form method="post" modelAttribute="reservation">Chapter 3 ■ Spring MVC
-156
-<table>
-...
-<tr>
-<td>Sport Type</td>
-<td><form:select path="sportType" items="${sportTypes}"
-itemValue="id" itemLabel="name" /></td>
-<td><form:errors path="sportType" cssClass="error" /></td>
-</tr>
-<tr>
-<td colspan="3"><input type="submit" /></td>
-/<tr>
-</table>
-</form>
-</body>
-</html>
-The <form:select> tag provides a way to generate a drop-down list of values passed to the view by the
-controller. Thus, the form represents the sportType field as a set of HTML <select> elements, instead of the
-previous open-ended fields—<input>—that require a user to introduce text values.
-Next, let’s take a look at how the controller assigns the sportType field as a model attribute; the process
-is a little different from the previous fields.
-First let’s define the getAllSportTypes() method in the ReservationService interface for retrieving all
-available sport types.
-package com.apress.springrecipes.court.service;
-...
-public interface ReservationService {
-...
-public List<SportType> getAllSportTypes();
-}
-Then you can implement this method by returning a hard-coded list.
-package com.apress.springrecipes.court.service;
-...
-public class ReservationServiceImpl implements ReservationService {
-...
-public static final SportType TENNIS = new SportType(1, "Tennis");
-public static final SportType SOCCER = new SportType(2, "Soccer");
-public List<SportType> getAllSportTypes() {
-return Arrays.asList(TENNIS, SOCCER);
-}
-}
-Now that you have an implementation that returns a hard-coded list of SportType objects, let’s take a
-look at how the controller associates this list for it to be returned to the form view.
-package com.apress.springrecipes.court.service;
-.....
-@ModelAttribute("sportTypes")
-public List<SportType> populateSportTypes() {Chapter 3 ■ Spring MVC
-157
-return reservationService.getAllSportTypes();
-}
-@RequestMapping(method = RequestMethod.GET)
-public String setupForm(
-@RequestParam(required = false, value = "username") String username, Model model) {
-Reservation reservation = new Reservation();
-reservation.setPlayer(new Player(username, null));
-model.addAttribute("reservation", reservation);
-return "reservationForm";
-}
-Notice that the setupForm handler method charged with returning the empty Reservation object to the
-form view remains unchanged.
-The new addition and what is responsible for passing a SportType list as a model attribute to the form
-view is the method decorated with the @ModelAttribute("sportTypes") annotation. The @ModelAttribute
-annotation is used to define global model attributes, available to any returning view used in handler
-methods. In the same way, a handler method declares a Model object as an input parameter and assigns
-attributes that can be accessed in the returning view.
-Since the method decorated with the @ModelAttribute("sportTypes") annotation has a return type of
-List<SportType> and makes a call to reservationService.getAllSportTypes(), the hard-coded TENNIS
-and SOCCER SportType objects are assigned to the model attribute named sportTypes. This last model
-attribute is used in the form view to populate a drop-down list (i.e., <form:select> tag).
-Bind Properties of Custom Types
-When a form is submitted, a controller binds the form field values to the model object’s properties of the
-same name, in this case a Reservation object. However, for properties of custom types, a controller is not
-able to convert them unless you specify the corresponding property editors for them.
-For example, the sport type selection field only submits the selected sport type ID—as this is the
-way HTML <select> fields operate. Therefore, you have to convert this ID into a SportType object with
-a property editor. First, you require the getSportType() method in ReservationService to retrieve a
-SportType object by its ID.
-package com.apress.springrecipes.court.service;
-...
-public interface ReservationService {
-...
-public SportType getSportType(int sportTypeId);
-}
-For testing purposes, you can implement this method with a switch/case statement.
-package com.apress.springrecipes.court.service;
-...
-public class ReservationServiceImpl implements ReservationService {
-...
-public SportType getSportType(int sportTypeId) {
-switch (sportTypeId) {
-case 1:
-return TENNIS;Chapter 3 ■ Spring MVC
-158
-case 2:
-return SOCCER;
-default:
-return null;
-}
-}
-}
-Then you create the SportTypeConverter class to convert a sport type ID into a SportType object.
-This converter requires ReservationService to perform the lookup.
-package com.apress.springrecipes.court.domain;
-import com.apress.springrecipes.court.service.ReservationService;
-import org.springframework.core.convert.converter.Converter;
-public class SportTypeConverter implements Converter<String, SportType> {
-private ReservationService reservationService;
-public SportTypeConverter(ReservationService reservationService) {
-this.reservationService = reservationService;
-}
-@Override
-public SportType convert(String source) {
-int sportTypeId = Integer.parseInt(source);
-SportType sportType = reservationService.getSportType(sportTypeId);
-return sportType;
-}
-}
-Now that you have the supporting SportTypeConverter class required to bind form properties to a
-custom class like SportType, you need to associate it with the controller. For this purpose, you can use the
-addFormatters method from the WebMvcConfigurer.
-By overriding this method in your configuration class, custom types can be associated with a controller.
-This includes the SportTypeConverter class and other custom types like Date. Though we didn’t mention
-the date field earlier, it suffers from the same problem as the sport type selection field. A user introduces
-date fields as text values. For the controller to assign these text values to the Reservation object’s date field,
-this requires the date fields to be associated with a Date object. Given that the Date class is part of the Java
-language, it won’t be necessary to create a special class like SportTypeConverter. For this purpose, the
-Spring Framework already includes a custom class.
-Knowing you need to bind both the SportTypeConverter class and a Date class to the underlying
-controller, the following code illustrates the modifications to the configuration class:
-package com.apress.springrecipes.court.web.config;
-...
-import com.apress.springrecipes.court.domain.SportTypeConverter;
-import com.apress.springrecipes.court.service.ReservationService;
+import com.apress.springrecipes.court.domain.Members;
+import com.apress.springrecipes.court.service.MemberService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.FormatterRegistry;
-import org.springframework.format.datetime.DateFormatter;Chapter 3 ■ Spring MVC
-159
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+@Controller
+public class RestMemberController {
+private final MemberService memberService;
+@Autowired
+public RestMemberController(MemberService memberService) {
+super();
+this.memberService=memberService;
+}
+@RequestMapping("/members")
+public String getRestMembers(Model model) {
+Members members = new Members();
+members.addMembers(memberService.findAll());
+model.addAttribute("members", members);
+return "membertemplate";
+}
+}
+By using @RequestMapping("/members") to decorate a controller’s handler method, a REST service
+endpoint is made accessible at host_name/[app-name]/members. You can observe that control is
+relinquished to a logical view named membertemplate. The following code illustrates the declaration used to
+define the logical view named membertemplate:
 @Configuration
 @EnableWebMvc
-@ComponentScan("com.apress.springrecipes.court.web")
-public class WebConfiguration implements WebMvcConfigurer {
-@Autowired
-private ReservationService reservationService;
-@Override
-public void addFormatters(FormatterRegistry registry) {
-registry.addConverter(new SportTypeConverter(reservationService));
+@ComponentScan(basePackages = "com.apress.springrecipes.court")
+public class CourtRestConfiguration {Chapter 4 ■ Spring reSt
+185
+@Bean
+public View membertemplate() {
+return new MarshallingView(jaxb2Marshaller());
+}
+@Bean
+public Marshaller jaxb2Marshaller() {
+Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
+marshaller.setClassesToBeBound(Members.class, Member.class);
+return marshaller;
+}
+@Bean
+public ViewResolver viewResolver() {
+return new BeanNameViewResolver();
 }
 }
-The only field for this last class corresponds to reservationService, used to access the application’s
-ReservationService bean. Note the use of the @Autowired annotation that enables the injection of the
-bean. Next, you can find the addFormatters method used to bind the Date and SportTypeConverter
-classes. You can then find two calls to register the converter and formatter. These methods belong to the
-FormatterRegistry object, which is passed as an input parameter to the addFormatters method.
-The first call is used to bind a Date class to the DateFormatter class. The DateFormatter class is
-provided by the Spring Framework and offers functionality to parse and print Date objects.
-The second call is used to register the SportTypeConverter class. Since you created the
-SportTypeConverter class, you should know that its only input parameter is a ReservationService bean. By
-using this approach, every annotation-based controller (i.e., classes using the @Controller annotation) can
-have access to the same custom converters and formatters in their handler methods.
-Validate Form Data
-When a form is submitted, it’s standard practice to validate the data provided by a user before a submission
-is successful. Spring MVC supports validation by means of a validator object that implements the Validator
-interface. You can write the following validator to check whether the required form fields are filled and
-whether the reservation hour is valid on holidays and weekdays:
+The membertemplate view is defined as a MarshallingView type, which is a general-purpose class
+that allows a response to be rendered using a marshaller. Marshalling is the process of transforming an
+in-memory representation of an object into a data format. Therefore, for this particular case, a marshaller
+is charged with transforming Members and Member objects into an XML data format. The marshaller used
+by MarshallingView belongs to one of a series of XML marshallers provided by Spring—Jaxb2Marshaller.
+Other marshallers provided by Spring include CastorMarshaller, JibxMarshaller, XmlBeansMarshaller,
+and XStreamMarshaller.
+Marshallers themselves also require configuration. We opted to use the Jaxb2Marshaller marshaller
+because of its simplicity and Java Architecture for XML Binding (JAXB) foundations. However, if you’re more
+comfortable using the Castor XML framework, you might find it easier to use CastorMarshaller; if you’re
+more at ease using XStream, you would likely find it easier to use XStreamMarshaller; and it’s similar for the
+rest of the available marshallers.
+The Jaxb2Marshaller marshaller needs to be configured with either a property named
+classesToBeBound or a property named contextPath. In the case of classesToBeBound, the classes assigned
+to this property indicate the class (i.e., object) structure that is to be transformed into XML. The following
+code illustrates the Members and Member classes assigned to the Jaxb2Marshaller marshaller:
 package com.apress.springrecipes.court.domain;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.Errors;
-import org.springframework.validation.ValidationUtils;
-import org.springframework.validation.Validator;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-@Component
-public class ReservationValidator implements Validator {
-public boolean supports(Class<?> clazz) {
-return Reservation.class.isAssignableFrom(clazz);
+import javax.xml.bind.annotation.XmlRootElement;
+@XmlRootElement
+public class Member {
+private String name;
+private String phone;
+private String email;
+public String getEmail() {
+return email;
+}Chapter 4 ■ Spring reSt
+186
+public String getName() {
+return name;
 }
-public void validate(Object target, Errors errors) {
-ValidationUtils.rejectIfEmptyOrWhitespace(errors, "courtName",
-"required.courtName", "Court name is required.");Chapter 3 ■ Spring MVC
-160
-ValidationUtils.rejectIfEmpty(errors, "date",
-"required.date", "Date is required.");
-ValidationUtils.rejectIfEmpty(errors, "hour",
-"required.hour", "Hour is required.");
-ValidationUtils.rejectIfEmptyOrWhitespace(errors, "player.name",
-"required.playerName", "Player name is required.");
-ValidationUtils.rejectIfEmpty(errors, "sportType",
-"required.sportType", "Sport type is required.");
-Reservation reservation = (Reservation) target;
-LocalDate date = reservation.getDate();
-int hour = reservation.getHour();
-if (date != null) {
-if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
-if (hour < 8 || hour > 22) {
-errors.reject("invalid.holidayHour", "Invalid holiday hour.");
+public String getPhone() {
+return phone;
 }
-} else {
-if (hour < 9 || hour > 21) {
-errors.reject("invalid.weekdayHour", "Invalid weekday hour.");
+public void setEmail(String email) {
+this.email = email;
+}
+public void setName(String name) {
+this.name = name;
+}
+public void setPhone(String phone) {
+this.phone = phone;
 }
 }
+Here’s the Members class:
+package com.apress.springrecipes.court.domain;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
+public class Members {
+@XmlElement(name="member")
+private List<Member> members = new ArrayList<>();
+public List<Member> getMembers() {
+return members;
+}
+public void setMembers(List<Member> members) {
+this.members = members;
+}
+public void addMembers(Collection<Member> members) {
+this.members.addAll(members);
+}
+}Chapter 4 ■ Spring reSt
+187
+Note the Member class is a POJO decorated with the @XmlRootElement annotation. This annotation
+allows the Jaxb2Marshaller marshaller to detect a class’s (i.e., object’s) fields and transform them into XML
+data (e.g., name=John into <name>john</name>, email=john@doe.com into <email>john@doe.com</email>).
+To recap what’s been described, this means that when a request is made to a URL in the form
+http://[host_name]//app-name]/members.xml, the corresponding handler is charged with creating a
+Members object, which is then passed to a logical view named membertemplate. Based on this last view’s
+definition, a marshaller is used to convert a Members object into an XML payload that is returned to the REST
+service’s requesting party. The XML payload returned by the REST service is illustrated in the following code:
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<members>
+<member>
+<email>marten@deinum.biz</email>
+<name>Marten Deinum</name>
+<phone>00-31-1234567890</phone>
+</member>
+<member>
+<email>john@doe.com</email>
+<name>John Doe</name>
+<phone>1-800-800-800</phone>
+</member>
+<member>
+<email>jane@doe.com</email>
+<name>Jane Doe</name>
+<phone>1-801-802-803</phone>
+</member>
+</members>
+This XML payload represents a simple approach to generating a REST service’s response. As the recipes
+in this chapter progress, you will learn more sophisticated approaches, such as the ability to create widely
+used REST service payloads such as RSS, Atom, and JSON.
+If you look closely at the REST service endpoint or URL described in the previous paragraph, you’ll
+note that it has an .xml extension. If you try another extension—or even omit the extension—this particular
+REST service may not be triggered. This last behavior is directly tied to Spring MVC and how it handles view
+resolution. It has nothing do with REST services per se.
+By default, since the view associated with this particular REST service handler method returns XML,
+it’s triggered by an .xml extension. This allows the same handler method to support multiple views. For
+example, it can be convenient for a request like http://[host_name]/[app-name]/members.pdf to return
+the same information in a PDF document, as well as a request like http://[host_name]/[app-name]/
+members.html to return content in HTML or a request like http://[host_name]/[app-name]/members.xml
+to return XML for a REST request.
+So, what happens to a request with no URL extension, like http://[host_name]/[app-name]/members?
+This also depends heavily on Spring MVC view resolution. For this purpose, Spring MVC supports a process
+called content negotiation, by which a view is determined based on a request’s extension or HTTP headers.
+Since REST service requests typically have HTTP headers in the form Accept: application/xml,
+Spring MVC configured to use content negotiation can determine to serve XML (REST) payloads to such
+requests even if requests are made extensionless. This also allows extensionless requests to be made in
+formats such as HTML, PDF, and XLS, all simply based on HTTP headers. Recipe 3-7 in Chapter 3 discusses
+content negotiation.Chapter 4 ■ Spring reSt
+188
+Use @ResponseBody to Produce XML
+Using MarshallingView to produce XML is one way of producing results; however, when you want to have
+multiple representations (JSON, for instance) of the same data (a list of Member objects), adding another view
+can be a cumbersome task. Instead, you can rely on the Spring MVC HttpMessageConverters to convert
+an object to the representation requested by the user. The following code shows the changes made to
+RestMemberController:
+@Controller
+public class RestMemberController {
+...
+@RequestMapping("/members")
+@ResponseBody
+public Members getRestMembers() {
+Members members = new Members();
+members.addMembers(memberService.findAll());
+return members;
 }
 }
+The first change is that you have now, additionally, annotated the controller method
+with @ResponseBody. This annotation tells Spring MVC that the result of the method should
+be used as the body of the response. Because you want XML, this marshalling is done by the
+Jaxb2RootElementHttpMessageConverter class provided by Spring. The second change is that because of
+the @ResponseBody annotation, you don’t need the view name anymore but can simply return the Members
+object.
+■ Tip When using Spring 4 or higher instead of annotating the method with @ResponseBody, you can also
+annotate your controller with @RestController instead of @Controller, which would give the same result.
+this is especially convenient if you have a single controller with multiple methods.
+These changes also allow you to clean up your configuration, as you don’t need MarshallingView and
+Jaxb2Marshaller anymore.
+package com.apress.springrecipes.court.web.config;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+@Configuration
+@EnableWebMvc
+@ComponentScan(basePackages = "com.apress.springrecipes.court")
+public class CourtRestConfiguration {}
+When the application is deployed and you do request the members from http://localhost:8080/
+court/members.xml, it will yield the same results as before.Chapter 4 ■ Spring reSt
+189
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<members>
+<member>
+<email>marten@deinum.biz</email>
+<name>Marten Deinum</name>
+<phone>00-31-1234567890</phone>
+</member>
+<member>
+<email>john@doe.com</email>
+<name>John Doe</name>
+<phone>1-800-800-800</phone>
+</member>
+<member>
+<email>jane@doe.com</email>
+<name>Jane Doe</name>
+<phone>1-801-802-803</phone>
+</member>
+</members>
+Use @PathVariable to Limit the Results
+It’s common for REST service requests to have parameters. This is done to limit or filter a service’s payload.
+For example, a request in the form http://[host_name]/[app-name]/member/353/ can be used to retrieve
+information exclusively on member 353. Another variation can be a request like http://[host_name]/
+[app-name]/reservations/07-07-2010/ to retrieve reservations made on the date July 7, 2010.
+To use parameters for constructing a REST service in Spring, you use the @PathVariable annotation.
+The @PathVariable annotation is added as an input parameter to the handler method, per Spring’s MVC
+conventions, for it to be used inside the handler method body. The following snippet illustrates a handler
+method for a REST service using the @PathVariable annotation:
+import org.springframework.web.bind.annotation.PathVariable;
+@Controller
+public class RestMemberController {
+...
+@RequestMapping("/member/{memberid}")
+@ResponseBody
+public Member getMember(@PathVariable("memberid") long memberID) {
+return memberService.find(memberID);
 }
-In this validator, you use utility methods such as rejectIfEmptyOrWhitespace() and rejectIfEmpty()
-in the ValidationUtils class to validate the required form fields. If any of these form fields are empty,
-these methods will create a field error and bind it to the field. The second argument of these methods is the
-property name, while the third and fourth are the error code and default error message.
-You also check whether the reservation hour is valid on holidays and weekdays. In case of invalidity, you
-should use the reject() method to create an object error to be bound to the reservation object, not to a field.
-Since the validator class is annotated with the @Component annotation, Spring attempts to instantiate the
-class as a bean in accordance with the class name, in this case reservationValidator.
-Since validators may create errors during validation, you should define messages for the error codes for
-displaying to the user. If you have ResourceBundleMessageSource defined, you can include the following error
-messages in your resource bundle for the appropriate locale (e.g., messages.properties for the default locale):
-required.courtName=Court name is required
-required.date=Date is required
-required.hour=Hour is required
-required.playerName=Player name is required
-required.sportType=Sport type is required
-invalid.holidayHour=Invalid holiday hour
-invalid.weekdayHour=Invalid weekday hour
-To apply this validator, you need to perform the following modification to your controller:
-package com.apress.springrecipes.court.service;
-.....
-private ReservationService reservationService;
-private ReservationValidator reservationValidator;Chapter 3 ■ Spring MVC
-161
-public ReservationFormController(ReservationService reservationService,
-ReservationValidator reservationValidator) {
-this.reservationService = reservationService;
-this.reservationValidator = reservationValidator;
 }
-@RequestMapping(method = RequestMethod.POST)
-public String submitForm(
-@ModelAttribute("reservation") @Validated Reservation reservation,
-BindingResult result, SessionStatus status) {
-if (result.hasErrors()) {
-return "reservationForm";
-} else {
-reservationService.make(reservation);
-return "redirect:reservationSuccess";
-}
-}
+Notice the @RequestMapping value contains {memberid}. Values surrounded by { } are used to indicate
+that URL parameters are variables. Further note that the handler method is defined with the input parameter
+@PathVariable("memberid") long memberID. This last declaration associates whatever memberid value
+forms part of the URL and assigns it to a variable named memberID that can be accessible inside the handler
+method. Therefore, REST endpoints in the form /member/353/ and /member/777/ will be processed by this
+last handler method, with the memberID variable being assigned values of 353 and 777, respectively. Inside
+the handler method, the appropriate queries can be made for members 353 and 777—via the memberID
+variable—and returned as the REST service’s payload.Chapter 4 ■ Spring reSt
+190
+A request to http://localhost:8080/court/member/2 will result in an XML representation of the
+member with an ID of 2.
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<member>
+<email>john@doe.com</email>
+<name>John Doe</name>
+<phone>1-800-800-800</phone>
+</member>
+In addition to the supporting { } notation, it’s also possible to use a wildcard (*) notation for defining
+REST endpoints. This is often the case when a design team has opted to use expressive URLs (often called
+pretty URLs) or opts to use search engine optimization (SEO) techniques to make a REST URL search engine
+friendly. The following snippet illustrates a declaration for a REST service using the wildcard notation:
+@RequestMapping("/member/*/{memberid}")
+@ResponseBody
+public Member getMember(@PathVariable("memberid") long memberID) { ... }
+In this case, the addition of a wildcard doesn’t have any influence over the logic performed by the
+REST service. But it will match endpoint requests in the form of /member/John+Smith/353/ and /member/
+Mary+Jones/353/, which can have an important impact on end user readability and SEO.
+It’s also worth mentioning that data binding can be used in the definition of handler methods for REST
+endpoints. The following snippet illustrates a declaration for a REST service using data binding:
 @InitBinder
 public void initBinder(WebDataBinder binder) {
-binder.setValidator(reservationValidator);
+SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+binder.registerCustomEditor(Date.class, new CustomDateEditor(dateFormat, false));
 }
-The first addition to the controller is the ReservationValidator field, which gives the controller access
-to an instance of the validator bean.
-The next modification takes place in the HTTP POST handler method, which is always called when
-a user submits a form. Next to the @ModelAttribute annotation there is now an @Validated annotation,
-which triggers validation of the object. After the validation, the result parameter—the BindingResult
-object—contains the results for the validation process. Next, a conditional based on the value of result.
-hasErrors() is made. If the validation class detects errors, this value is true.
-If errors are detected in the validation process, the method handler returns the view
-reservationForm, which corresponds to the same form so a user can resubmit information. If no errors
-are detected in the validation process, a call is made to perform the reservation— reservationService.
-make(reservation);—followed by a redirection to the success view reservationSuccess.
-The registration of the validator is done in the @InitBinder annotated method, and the validator is
-set on the WebDataBinder so that it can be used after binding. To register the validator, you need to use the
-setValidator method. You can also register multiple validators using the addValidators method, which
-takes a varargs argument for one or more Validator instances.
-■ Note the WebDataBinder can also be used to register additional ProperyEditor, Converter, and
-Formatter instances for type conversion. this can be used instead of registering global PropertyEditors,
-Converters, or Formatters.
-Expire a Controller’s Session Data
-To support the possibility of a form being submitted multiple times and not losing data provided by a user
-between submissions, the controller relies on the use of the @SessionAttributes annotation. By doing so, a
-reference to the reservation field represented as a Reservation object is saved between requests.Chapter 3 ■ Spring MVC
-162
-However, once a form is submitted successfully and a reservation is made, there is no point in keeping
-the Reservation object in a user’s session. In fact, if a user revisits the form within a short period of time,
-there is a possibility that remnants of this old Reservation object emerge if not removed.
-Values assigned using the @SessionAttributes annotation can be removed using the SessionStatus
-object, which is an object that can be passed as an input parameter to handler methods. The following code
-illustrates how to expire the controller’s session data:
+@RequestMapping("/reservations/{date}")
+public void getReservation(@PathVariable("date") Date resDate) { ... }
+In this case, a request in the form http://[host_name]/[app-name]/reservations/07-07-2010/ is
+matched by this last handler method, with the value 07-07-2010 passed into the handler method—as the
+variable resDate—where it can be used to filter the REST web service payload.
+Use ResponseEntity to Inform the Client
+The endpoint for retrieving a single Member instance returns either a valid member or nothing at all. Both
+lead to a request that will send the HTTP response code 200, which means OK, back to the client. However,
+this is probably not what your users will expect. When working with resources, you should inform them of
+the fact that a resource cannot be found. Ideally, you would want to return the HTTP response code 404,
+which indicates “not found.” The following code snippet shows the modified getMember method:
 package com.apress.springrecipes.court.web;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+...Chapter 4 ■ Spring reSt
+191
 @Controller
-@RequestMapping("/reservationForm")
-@SessionAttributes("reservation")
-public class ReservationFormController {
-@RequestMapping(method = RequestMethod.POST)
-public String submitForm(
-@ModelAttribute("reservation") Reservation reservation,
-BindingResult result, SessionStatus status) {
-if (result.hasErrors()) {
-return "reservationForm";
-} else {
-reservationService.make(reservation);
-status.setComplete();
-return "redirect:reservationSuccess";
-}
-}
-}
-Once the handler method performs the reservation by calling reservationService.make(reservation);
-and right before a user is redirected to a success page, it becomes an ideal time in which expire a controller’s
-session data. This is done by calling the setComplete() method on the SessionStatus object. It’s that simple.
-
------------------------------------------------------------------------------
-3-10. Handle Multipage Forms with Wizard Form Controllers
-Problem
-In a web application, you sometimes have to deal with complex forms that span multiple pages. Forms like
-this are usually called wizard forms because users have to fill them page by page—just like using a software
-wizard. Undoubtedly, you can create one or more form controllers to handle a wizard form.
-Solution
-As there are multiple form pages for a wizard form, you have to define multiple page views for a wizard form
-controller. A controller then manages the form status across all these form pages. In a wizard form, there can
-also be a single controller handler method for form submissions, just like an individual form. However, to
-distinguish between a user’s action, a special request parameter needs to be embedded in each form, usually
-specified as the name of a submit button.
-`_finish`: Finish the wizard form.
-`_cancel`: Cancel the wizard form.
-`_targetx`: Step to the target page, where x is the zero-based page index.Chapter 3 ■ Spring MVC
-163
-Using these parameters, a controller’s handler method can determine what steps to take based on the
-form and user’s action.
-How It Works
-Suppose you want to provide a function that allows a user to reserve a court at fixed hours periodically.
-You first define the PeriodicReservation class in the domain subpackage.
-package com.apress.springrecipes.court.domain;
+public class RestMemberController {
 ...
-public class PeriodicReservation {
-private String courtName;
-private Date fromDate;
-private Date toDate;
-private int period;
-private int hour;
-private Player player;
-// Getters and Setters
-...
+@RequestMapping("/member/{memberid}")
+@ResponseBody
+public ResponseEntity<Member> getMember(@PathVariable("memberid") long memberID) {
+Member member = memberService.find(memberID);
+if (member != null) {
+return new ResponseEntity<Member>(member, HttpStatus.OK);
 }
-Then you add a makePeriodic() method to the ReservationService interface for making a periodic
-reservation.
-package com.apress.springrecipes.court.service;
-...
-public interface ReservationService {
-...
-public void makePeriodic(PeriodicReservation periodicReservation)
-throws ReservationNotAvailableException;
-}
-The implementation of this method involves generating a series of Reservation objects from
-PeriodicReservation and passing each reservation to the make() method. Obviously in this simple
-application, there’s no transaction management support.
-package com.apress.springrecipes.court.service;
-...
-public class ReservationServiceImpl implements ReservationService {
-...
-@Override
-public void makePeriodic(PeriodicReservation periodicReservation)
-throws ReservationNotAvailableException {
-LocalDate fromDate = periodicReservation.getFromDate();Chapter 3 ■ Spring MVC
-164
-while (fromDate.isBefore(periodicReservation.getToDate())) {
-Reservation reservation = new Reservation();
-reservation.setCourtName(periodicReservation.getCourtName());
-reservation.setDate(fromDate);
-reservation.setHour(periodicReservation.getHour());
-reservation.setPlayer(periodicReservation.getPlayer());
-make(reservation);
-fromDate = fromDate.plusDays(periodicReservation.getPeriod());
+return new ResponseEntity(HttpStatus.NOT_FOUND);
 }
 }
-}
-Create Wizard Form Pages
-Suppose you want to show users the periodic reservation form split across three different pages. Each page
-has a portion of the form fields. The first page is reservationCourtForm.jsp, which contains only the court
-name field for the periodic reservation.
-<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
-<html>
-<head>
-<title>Reservation Court Form</title>
-<style>
-.error {
-color: #ff0000;
-font-weight: bold;
-}
-</style>
-</head>
-<body>
-<form:form method="post" modelAttribute="reservation">
-<table>
-<tr>
-<td>Court Name</td>
-<td><form:input path="courtName" /></td>
-<td><form:errors path="courtName" cssClass="error" /></td>
-</tr>
-<tr>
-<td colspan="3">
-<input type="hidden" value="0" name="_page" />
-<input type="submit" value="Next" name="_target1" />
-<input type="submit" value="Cancel" name="_cancel" />
-</td>
-</tr>
-</table>
-</form:form>
-</body>
-</html>Chapter 3 ■ Spring MVC
-165
-The form and input fields in this page are defined with Spring’s <form:form> and <form:input>
-tags. They are bound to the model attribute reservation and its properties. There’s also an error tag for
-displaying the field error message to the user. Note that there are two submit buttons in this page. The Next
-button’s name must be _target1. It asks the wizard form controller to step forward to the second page,
-whose page index is 1 (zero-based). The Cancel button’s name must be _cancel. It asks the controller to
-cancel this form. In addition, there is also a hidden form field to keep track of the page a user is on; in this
-case, it corresponds to 0.
-The second page is reservationTimeForm.jsp. It contains the date and time fields for a periodic
-reservation.
-<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
-<html>
-<head>
-<title>Reservation Time Form</title>
-<style>
-.error {
-color: #ff0000;
-font-weight: bold;
-}
-</style>
-</head>
-<body>
-<form:form method="post" modelAttribute="reservation">
-<table>
-<tr>
-<td>From Date</td>
-<td><form:input path="fromDate" /></td>
-<td><form:errors path="fromDate" cssClass="error" /></td>
-</tr>
-<tr>
-<td>To Date</td>
-<td><form:input path="toDate" /></td>
-<td><form:errors path="toDate" cssClass="error" /></td>
-</tr>
-<tr>
-<td>Period</td>
-<td><form:select path="period" items="${periods}" /></td>
-<td><form:errors path="period" cssClass="error" /></td>
-</tr>
-<tr>
-<td>Hour</td>
-<td><form:input path="hour" /></td>
-<td><form:errors path="hour" cssClass="error" /></td>
-</tr>
-<tr>
-<td colspan="3">
-<input type="hidden" value="1" name="_page"/>
-<input type="submit" value="Previous" name="_target0" />
-<input type="submit" value="Next" name="_target2" />Chapter 3 ■ Spring MVC
-166
-<input type="submit" value="Cancel" name="_cancel" />
-</td>
-</tr>
-</table>
-</form:form>
-</body>
-</html>
-There are three submit buttons in this form. The names of the Previous and Next buttons must be
-_target0 and _target2, respectively. They ask the wizard form controller to step to the first page and the
-third page. The Cancel button asks the controller to cancel this form. In addition, there is a hidden form field
-to keep track of the page a user is on; in this case, it corresponds to 1.
-The third page is reservationPlayerForm.jsp. It contains the player information fields for a periodic
-reservation.
-<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
-<html>
-<head>
-<title>Reservation Player Form</title>
-<style>
- .error {
- color: #ff0000;
- font-weight: bold;
- }
-</style>
-</head>
-<body>
-<form:form method="POST" commandName="reservation">
-<table>
-<tr>
-<td>Player Name</td>
-<td><form:input path="player.name" /></td>
-<td><form:errors path="player.name" cssClass="error" /></td>
-</tr>
-<tr>
-<td>Player Phone</td>
-<td><form:input path="player.phone" /></td>
-<td><form:errors path="player.phone" cssClass="error" /></td>
-</tr>
-<tr>
-<td colspan="3">
-<input type="hidden" value="2" name="_page"/>
-<input type="submit" value="Previous" name="_target1" />
-<input type="submit" value="Finish" name="_finish" />
-<input type="submit" value="Cancel" name="_cancel" />
-</td>
-</tr>
-</table>
-</form:form>
-</body>
-</html>Chapter 3 ■ Spring MVC
-167
-There are three submit buttons in this form. The Previous button asks the wizard form controller to step
-back to the second page. The Finish button’s name must be _finish. It asks the controller to finish this form.
-The Cancel button asks the controller to cancel this form. In addition, there is a hidden form field to keep
-track of the page a user is on; in this case, it corresponds to 2.
-Create a Wizard Form Controller
-Now let’s create a wizard form controller to handle this periodic reservation form. Like the previous Spring
-MVC controllers, this controller has four main handler methods—one for HTTP GET requests and others for
-HTTP POST requests—as well as makes use of the same controller elements (e.g., annotations, validation, or
-sessions) used in prior controllers. For a wizard form controller, all the form fields in different pages are bound
-to a single model attribute’s Reservation object, which is stored in a user’s session across multiple requests.
-package com.apress.springrecipes.court.web;
-import com.apress.springrecipes.court.domain.PeriodicReservation;
-import com.apress.springrecipes.court.domain.Player;
-import com.apress.springrecipes.court.service.ReservationService;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.support.SessionStatus;
-import org.springframework.web.util.WebUtils;
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-@Controller
-@RequestMapping("/periodicReservationForm")
-@SessionAttributes("reservation")
-public class PeriodicReservationController {
- private final Map<Integer, String> pageForms = new HashMap<>(3);
- private final ReservationService reservationService;
- public PeriodicReservationController(ReservationService reservationService) {
- this.reservationService = reservationService;
- }
-@PostConstruct
-public void initialize() {
-pageForms.put(0, "reservationCourtForm");
-pageForms.put(1, "reservationTimeForm");
-pageForms.put(2, "reservationPlayerForm");
-}Chapter 3 ■ Spring MVC
-168
-@GetMapping
-public String setupForm(Model model) {
-PeriodicReservation reservation = new PeriodicReservation();
-reservation.setPlayer(new Player());
-model.addAttribute("reservation", reservation);
-return "reservationCourtForm";
-}
-@PostMapping(params = {"_cancel"})
-public String cancelForm(@RequestParam("_page") int currentPage) {
-return pageForms.get(currentPage);
-}
-@PostMapping(params = {"_finish"})
-public String completeForm(
-@ModelAttribute("reservation") PeriodicReservation reservation,
-BindingResult result, SessionStatus status,
-@RequestParam("_page") int currentPage) {
-if (!result.hasErrors()) {
-reservationService.makePeriodic(reservation);
-status.setComplete();
-return "redirect:reservationSuccess";
-} else {
-return pageForms.get(currentPage);
-}
-}
-@PostMapping
-public String submitForm(
-HttpServletRequest request,
-@ModelAttribute("reservation") PeriodicReservation reservation,
-BindingResult result, @RequestParam("_page") int currentPage) {
-int targetPage = getTargetPage(request, "_target", currentPage);
-if (targetPage < currentPage) {
-return pageForms.get(targetPage);
-}
-if (!result.hasErrors()) {
-return pageForms.get(targetPage);
-} else {
-return pageForms.get(currentPage);
-}
-}
-@ModelAttribute("periods")
-public Map<Integer, String> periods() {Chapter 3 ■ Spring MVC
-169
-Map<Integer, String> periods = new HashMap<Integer, String>();
-periods.put(1, "Daily");
-periods.put(7, "Weekly");
-return periods;
-}
-private int getTargetPage(HttpServletRequest request, String paramPrefix, int currentPage) {
-Enumeration<String> paramNames = request.getParameterNames();
-while (paramNames.hasMoreElements()) {
-String paramName = paramNames.nextElement();
-if (paramName.startsWith(paramPrefix)) {
-for (int i = 0; i < WebUtils.SUBMIT_IMAGE_SUFFIXES.length; i++) {
-String suffix = WebUtils.SUBMIT_IMAGE_SUFFIXES[i];
-if (paramName.endsWith(suffix)) {
-paramName = paramName.substring(0, paramName.length() -
-suffix.length());
-}
-}
-return Integer.parseInt(paramName.substring(paramPrefix.length()));
-}
-}
-return currentPage;
-}
-}
-This controller uses some of the same elements used in the previous ReservationFormController
-controller, so we won’t go into specifics about what’s already been explained. But to recap, it uses the
-@SessionAttributes annotation to place the reservation object in a user’s session. It has the same HTTP
-GET method used to assign empty Reservation and Player objects upon loading the first form view.
-Next, the controller defines a HashMap in which it associates page numbers to view names. This HashMap
-is used various times in the controller since the controller needs to determine target views for a variety of
-scenarios (e.g., validation or a user clicking Cancel or Next).
-You can also find the method decorated with the @ModelAttribute("periods") annotation. As it
-was illustrated in previous controllers, this declaration allows a list of values to be made available to any
-returning view placed in the controller. If you look at the previous form reservationTimeForm.jsp, you can
-see that it expects to have access to a model attribute named periods.
-Then you can find that the first @PostMapping will be called if the incoming request has the _cancel
-parameter in the URL. It also tries to extract the currentPage value by extracting the page attribute from
-the request using @RequestParam("page"). When this method is called, it returns control to the view
-corresponding to the currentPage value. The result is that the input is reset to the input prior to changing
-the content of the input fields.
-The next @PostMapping(params={"_finish"}) will be called if the incoming request has the _finish
-parameter in the URL, which is the case if the user clicked the Finish button. As this is the final step in the
-process, you want to validate the Reservation object, and for that you annotate the attribute with @Validated.
-When there are no errors, the handler method makes the reservation by calling reservationService.
-makePeriodic(reservation); and redirects the user to the reservationSuccess view.Chapter 3 ■ Spring MVC
-170
-The final handler method with @PostMapping handles the remaining cases and declares an input
-parameter for the HttpServletRequest, allowing the handler method to access this object’s contents.
-Previous handler methods used parameters such as @RequestParam to input data typically located
-in these standard objects, as a shortcut mechanism. It demonstrates that full access to the standard
-HttpServletRequest and HttpServletResponse objects inside a handler method is possible. The names
-and notation for the remaining input parameters should be familiar to you from earlier controllers. If this
-handler method is called, it means the user clicked either the Next or Previous button on either of the forms.
-As a consequence, this means that inside the HttpServletRequest object there is a parameter named
-_target. This is because each of the form’s Next and Previous buttons is assigned this parameter.
-Using the getTargetPage method, the value for the _target parameter is extracted, which corresponds
-to either target0, target1, or target2 and is trimmed to 0, 1, or 2 representing the target page.
-Once you have the target page number and the current page number, you can determine whether the
-user clicked the Next or Previous button. If the target page is lower than the current page, this means the
-user clicked the Previous button. If the target page number is greater than the current page number, this
-means the user clicked the Next button.
-At this juncture, it isn’t clear why you need to determine whether a user clicked the Next or Previous
-button, especially since a view corresponding to the target page is always returned. But the reason behind
-this logic is the following: if a user clicked the Next button, you will want to validate the data, whereas if a
-user clicked the Previous button, there is no need to validate anything. This will become obvious in the next
-section when validation is incorporated into the controller.
-As you have the PeriodicReservationController class decorated with the @RequestMapping
-("/periodicReservationForm") annotation, you can access this controller through the following URL:
-http://localhost:8080/court/periodicReservation
-Validate Wizard Form Data
-In a simple form controller, you validate the entire model attribute object in one shot when the form is
-submitted. However, as there are multiple form pages for a wizard form controller, you have to validate each
-page when it’s submitted. For this reason, you create the following validator, which splits the validate()
-method into several fine-grained validate methods, each of which validates fields in a particular page:
-package com.apress.springrecipes.court.domain;
-import org.springframework.validation.Errors;
-import org.springframework.validation.ValidationUtils;
-import org.springframework.validation.Validator;
-public class PeriodicReservationValidator implements Validator {
-public boolean supports(Class clazz) {
-return PeriodicReservation.class.isAssignableFrom(clazz);
-}
-public void validate(Object target, Errors errors) {
-validateCourt(target, errors);
-validateTime(target, errors);
-validatePlayer(target, errors);
-}Chapter 3 ■ Spring MVC
-171
-public void validateCourt(Object target, Errors errors) {
-ValidationUtils.rejectIfEmptyOrWhitespace(errors, "courtName",
-"required.courtName", "Court name is required.");
-}
-public void validateTime(Object target, Errors errors) {
-ValidationUtils.rejectIfEmpty(errors, "fromDate",
-"required.fromDate", "From date is required.");
-ValidationUtils.rejectIfEmpty(errors, "toDate", "required.toDate",
-"To date is required.");
-ValidationUtils.rejectIfEmpty(errors, "period",
-"required.period", "Period is required.");
-ValidationUtils.rejectIfEmpty(errors, "hour", "required.hour",
-"Hour is required.");
-}
-public void validatePlayer(Object target, Errors errors) {
-ValidationUtils.rejectIfEmptyOrWhitespace(errors, "player.name",
-"required.playerName", "Player name is required.");
-}
-}
-Similar to the earlier validator example, notice that this validator also relies on the @Component
-annotation to automatically register the validator class as a bean. Once the validator bean is registered, the
-only thing left to do is incorporate the validator into the controller.
-package com.apress.springrecipes.court.web;
-import com.apress.springrecipes.court.domain.PeriodicReservation;
-import com.apress.springrecipes.court.domain.PeriodicReservationValidator;
-import com.apress.springrecipes.court.domain.Player;
-import com.apress.springrecipes.court.service.ReservationService;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.support.SessionStatus;
-import org.springframework.web.util.WebUtils;
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;Chapter 3 ■ Spring MVC
-172
-@Controller
-@RequestMapping("/periodicReservationForm")
-@SessionAttributes("reservation")
-public class PeriodicReservationController {
-private final Map<Integer, String> pageForms = new HashMap<>(3);
-private final ReservationService reservationService;
-private final PeriodicReservationValidator validator;
-public PeriodicReservationController(ReservationService reservationService,
-PeriodicReservationValidator
-periodicReservationValidator) {
-this.reservationService = reservationService;
-this.validator = periodicReservationValidator;
-}
-@InitBinder
-public void initBinder(WebDataBinder binder) {
-binder.setValidator(this.validator);
-}
-@PostMapping(params = {"_finish"})
-public String completeForm(
-@Validated @ModelAttribute("reservation") PeriodicReservation reservation,
-BindingResult result, SessionStatus status,
-@RequestParam("_page") int currentPage) {
-if (!result.hasErrors()) {
-reservationService.makePeriodic(reservation);
-status.setComplete();
-return "redirect:reservationSuccess";
-} else {
-return pageForms.get(currentPage);
-}
-}
-@PostMapping
-public String submitForm(
-HttpServletRequest request,
-@ModelAttribute("reservation") PeriodicReservation reservation,
-BindingResult result, @RequestParam("_page") int currentPage) {
-int targetPage = getTargetPage(request, "_target", currentPage);
-if (targetPage < currentPage) {
-return pageForms.get(targetPage);
-}
-validateCurrentPage(reservation, result, currentPage);
-if (!result.hasErrors()) {
-return pageForms.get(targetPage);
-} else {
-return pageForms.get(currentPage);
-}
-}Chapter 3 ■ Spring MVC
-173
-private void validateCurrentPage(PeriodicReservation reservation,
-BindingResult result, int currentPage) {
-switch (currentPage) {
-case 0:
-validator.validateCourt(reservation, result);
-break;
-case 1:
-validator.validateTime(reservation, result);
-break;
-case 2:
-validator.validatePlayer(reservation, result);
-break;
-}
-}
-...
-}
-The first addition to the controller is the validator field that is assigned an instance of the
-PeriodicReservationValidator validator bean via the class’s constructor. You can then find two references
-to the validator in the controller.
-The first one is when a user finishes submitting a form. To call the validator, you need to add the
-@Validated annotation to the method’s Reservation argument. To make that actually do something, you
-also need to add an @InitBinder annotated method, which registers the PeriodicReservationValidator
-with the data binder. If the validator returns no errors, the reservation is committed, a user’s session is
-reset, and the user is redirected to the reservationSuccess view. If the validator returns errors, a user is sent
-to the current view form to correct the errors. (See also recipe 3-9.)
-The second occasion the validator is used in the controller is when a user clicks the Next button on
-a form. Since a user is attempting to advance to the next form, it’s necessary to validate whatever data a
-user provided. Given there are three possible form views to validate, a case statement is used to determine
-what validator method to invoke. Once the execution of a validator method returns, if errors are detected, a
-user is sent to the currentPage view to can correct the errors; if no errors are detected, a user is sent to the
-targetPage view; note that these target pages numbers are mapped to a Map in the controller.
+The return value of the method has been changed to ResponseEntity<Member>. The ResponseEntity
+class in Spring MVC acts as a wrapper for an object to be used as the body of the result together with an
+HTTP status code. When you find a Member, it is returned with HttpStatus.OK, which corresponds to an HTTP
+status code of 200. When there is no result, you return HttpStatus.NOT_FOUND, corresponding to the HTTP
+status code 404, which means “not found.”

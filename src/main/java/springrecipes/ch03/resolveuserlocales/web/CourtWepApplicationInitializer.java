@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.resolveuserlocales.web;
 
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
@@ -21,3 +22,4 @@ public class CourtWepApplicationInitializer extends AbstractAnnotationConfigDisp
         return new String[]{"/"};
     }
 }
+*/
