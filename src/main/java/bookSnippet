@@ -1,195 +1,136 @@
+4-2. Publish JSON with REST Services
 Problem
-You want to publish an XML-based REST service with Spring.
+You want to publish a JavaScript Object Notation (JSON)–based REST service with Spring.
 Solution
-There are two possibilities when designing REST services in Spring. One involves publishing an application’s
-data as a REST service; the other involves accessing data from third-party REST services to be used in
-an application. This recipe describes how to publish an application’s data as a REST service. Recipe 4-2
-describes how to access data from third-party REST services. Publishing an application’s data as a REST
-service revolves around the use of the Spring MVC annotations @RequestMapping and @PathVariable.
-By using these annotations to decorate a Spring MVC handler method, a Spring application is capable of
-publishing an application’s data as a REST service.
-In addition, Spring supports a series of mechanisms to generate a REST service’s payload. This recipe
-will explore the simplest mechanism, which involves the use of Spring’s MarshallingView class. As the
-recipes in this chapter progress, you will learn about more advanced mechanisms supported by Spring to
-generate REST service payloads.Chapter 4 ■ Spring reSt
-184
+JSON has blossomed into a favorite payload format for REST services. However, unlike most REST service
+payloads, which rely on XML markup, JSON is different in the sense that its content is a special notation
+based on the JavaScript language. For this recipe, in addition to relying on Spring’s REST support, you will
+also use the MappingJackson2JsonView class that forms part of Spring to facilitate the publication of JSON
+content.
+■ Note the MappingJackson2JsonView class depends on the presence of the Jackson JSOn processor
+library, version 2, which can be downloaded at http://wiki.fasterxml.com/JacksonDownload. if you are
+using Maven or gradle you can simply add the Jackson library as a dependency in your projects build file.
+If your Spring applications incorporate Ajax designs, it’s likely that you’ll find yourself designing REST
+services that publish JSON as their payload. This is mainly because of the limited processing capabilities
+in browsers. Although browsers can process and extract information from REST services that publish XML
+payloads, it’s not very efficient. By instead delivering payloads in JSON, which is based on a language for
+which browsers have a native interpreter—JavaScript—the processing and extraction of data becomes
+more efficient. Unlike RSS and Atom feeds, which are standards, JSON has no specific structure it needs
+to follow—except its syntax, which you’ll explore shortly. Therefore, a JSON element’s payload structure is
+likely to be determined in coordination with the team members charged with an application’s Ajax design.Chapter 4 ■ Spring reSt
+192
 How It Works
-Publishing a web application’s data as a REST service (or as it’s more technically known in web services
-parlance, “creating an endpoint”) is strongly tied to Spring MVC, which you explored in Chapter 3. Since
-Spring MVC relies on the annotation @RequestMapping to decorate handler methods and define access
-points (i.e., URLs), it’s the preferred way in which to define a REST service’s endpoint.
-Use MarshallingView to Produce XML
-The following code illustrates a Spring MVC controller class with a handler method that defines a REST
-service endpoint:
-package com.apress.springrecipes.court.web;
-import com.apress.springrecipes.court.domain.Members;
-import com.apress.springrecipes.court.service.MemberService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestMapping;
-@Controller
-public class RestMemberController {
-private final MemberService memberService;
-@Autowired
-public RestMemberController(MemberService memberService) {
-super();
-this.memberService=memberService;
+The first thing you need to do is determine the information you want to publish as a JSON payload. This
+information can be located in an RDBMS or text file, be accessed through JDBC or ORM, or inclusively be
+part of a Spring bean or some other type of construct. Describing how to obtain this information would
+go beyond the scope of this recipe, so we will assume you’ll use whatever means you deem appropriate to
+access it. In case you’re unfamiliar with JSON, the following snippet illustrates a fragment of this format:
+{
+"glossary": {
+"title": "example glossary",
+"GlossDiv": {
+"title": "S",
+"GlossList": {
+"GlossEntry": {
+"ID": "SGML",
+"SortAs": "SGML",
+"GlossTerm": "Standard Generalized Markup Language",
+"Acronym": "SGML",
+"Abbrev": "ISO 8879:1986",
+"GlossDef": {
+"para": "A meta-markup language, used to create markup
+languages such as DocBook.",
+"GlossSeeAlso": ["GML", "XML"]
+},
+"GlossSee": "markup"
 }
+}
+}
+}
+}
+As you can observe, a JSON payload consists of text and separators such as { , } ,[ , ] , :, and ". We won’t
+go into details about using one separator over another, but it suffices to say this type of syntax makes it easier
+for a JavaScript engine to access and manipulate data than if it was to process it in an XML-type format.
+Use MappingJackson2JsonView to Produce XML
+Since you’ve already explored how to publish data using a REST service in recipes 4-1 and 4-3, we’ll cut to the
+chase and show you the actual handler method needed in a Spring MVC controller to achieve this process.
 @RequestMapping("/members")
 public String getRestMembers(Model model) {
 Members members = new Members();
 members.addMembers(memberService.findAll());
 model.addAttribute("members", members);
-return "membertemplate";
-}
-}
-By using @RequestMapping("/members") to decorate a controller’s handler method, a REST service
-endpoint is made accessible at host_name/[app-name]/members. You can observe that control is
-relinquished to a logical view named membertemplate. The following code illustrates the declaration used to
-define the logical view named membertemplate:
+return "jsonmembertemplate";
+}Chapter 4 ■ Spring reSt
+193
+You probably notice that it is quite similar to the controller method mentioned in recipe 4-1. The only
+difference is that you return a different name for the view. The name of the view you are returning here,
+jsonmembertemplate, is different and maps to a MappingJackson2JsonView view. You need to configure this
+view in your configuration class.
 @Configuration
 @EnableWebMvc
 @ComponentScan(basePackages = "com.apress.springrecipes.court")
-public class CourtRestConfiguration {Chapter 4 ■ Spring reSt
-185
+public class CourtRestConfiguration {
+...
 @Bean
-public View membertemplate() {
-return new MarshallingView(jaxb2Marshaller());
-}
-@Bean
-public Marshaller jaxb2Marshaller() {
-Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-marshaller.setClassesToBeBound(Members.class, Member.class);
-return marshaller;
-}
-@Bean
-public ViewResolver viewResolver() {
-return new BeanNameViewResolver();
+public View jsonmembertemplate() {
+MappingJackson2JsonView view = new MappingJackson2JsonView();
+view.setPrettyPrint(true);
+return view;
 }
 }
-The membertemplate view is defined as a MarshallingView type, which is a general-purpose class
-that allows a response to be rendered using a marshaller. Marshalling is the process of transforming an
-in-memory representation of an object into a data format. Therefore, for this particular case, a marshaller
-is charged with transforming Members and Member objects into an XML data format. The marshaller used
-by MarshallingView belongs to one of a series of XML marshallers provided by Spring—Jaxb2Marshaller.
-Other marshallers provided by Spring include CastorMarshaller, JibxMarshaller, XmlBeansMarshaller,
-and XStreamMarshaller.
-Marshallers themselves also require configuration. We opted to use the Jaxb2Marshaller marshaller
-because of its simplicity and Java Architecture for XML Binding (JAXB) foundations. However, if you’re more
-comfortable using the Castor XML framework, you might find it easier to use CastorMarshaller; if you’re
-more at ease using XStream, you would likely find it easier to use XStreamMarshaller; and it’s similar for the
-rest of the available marshallers.
-The Jaxb2Marshaller marshaller needs to be configured with either a property named
-classesToBeBound or a property named contextPath. In the case of classesToBeBound, the classes assigned
-to this property indicate the class (i.e., object) structure that is to be transformed into XML. The following
-code illustrates the Members and Member classes assigned to the Jaxb2Marshaller marshaller:
-package com.apress.springrecipes.court.domain;
-import javax.xml.bind.annotation.XmlRootElement;
-@XmlRootElement
-public class Member {
-private String name;
-private String phone;
-private String email;
-public String getEmail() {
-return email;
+The MappingJackson2JsonView view uses the Jackson2 library to convert objects to and from JSON. It uses
+a Jackson2 ObjectMapper instance for the conversion. When a request is made to http://localhost:8080/
+court/members.json, the controller method will be invoked, and a JSON representation will be returned.
+{
+"members" : {
+"members" : [ {
+"name" : "Marten Deinum",
+"phone" : "00-31-1234567890",
+"email" : "marten@deinum.biz"
+}, {
+"name" : "John Doe",
+"phone" : "1-800-800-800",
+"email" : "john@doe.com"
+}, {
+"name" : "Jane Doe",
+"phone" : "1-801-802-803",
+"email" : "jane@doe.com"
+} ]
+}
+}
+Actually, this JSON will be produced by each call to /members or /members.* (for instance, /members.xml
+will also produce JSON). Let’s add the method and view from recipe 4-1 to the controller.
+@Controller
+public class RestMemberController {
+...
+@RequestMapping(value="/members", produces=MediaType.APPLICATION_XML_VALUE)
+public String getRestMembersXml(Model model) {
+Members members = new Members();
+members.addMembers(memberService.findAll());
+model.addAttribute("members", members);
+return "xmlmembertemplate";
 }Chapter 4 ■ Spring reSt
-186
-public String getName() {
-return name;
-}
-public String getPhone() {
-return phone;
-}
-public void setEmail(String email) {
-this.email = email;
-}
-public void setName(String name) {
-this.name = name;
-}
-public void setPhone(String phone) {
-this.phone = phone;
+194
+@RequestMapping(value="/members", produces= MediaType.APPLICATION_JSON_VALUE)
+public String getRestMembersJson(Model model) {
+Members members = new Members();
+members.addMembers(memberService.findAll());
+model.addAttribute("members", members);
+return "jsonmembertemplate";
 }
 }
-Here’s the Members class:
-package com.apress.springrecipes.court.domain;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.FIELD)
-public class Members {
-@XmlElement(name="member")
-private List<Member> members = new ArrayList<>();
-public List<Member> getMembers() {
-return members;
-}
-public void setMembers(List<Member> members) {
-this.members = members;
-}
-public void addMembers(Collection<Member> members) {
-this.members.addAll(members);
-}
-}Chapter 4 ■ Spring reSt
-187
-Note the Member class is a POJO decorated with the @XmlRootElement annotation. This annotation
-allows the Jaxb2Marshaller marshaller to detect a class’s (i.e., object’s) fields and transform them into XML
-data (e.g., name=John into <name>john</name>, email=john@doe.com into <email>john@doe.com</email>).
-To recap what’s been described, this means that when a request is made to a URL in the form
-http://[host_name]//app-name]/members.xml, the corresponding handler is charged with creating a
-Members object, which is then passed to a logical view named membertemplate. Based on this last view’s
-definition, a marshaller is used to convert a Members object into an XML payload that is returned to the REST
-service’s requesting party. The XML payload returned by the REST service is illustrated in the following code:
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<members>
-<member>
-<email>marten@deinum.biz</email>
-<name>Marten Deinum</name>
-<phone>00-31-1234567890</phone>
-</member>
-<member>
-<email>john@doe.com</email>
-<name>John Doe</name>
-<phone>1-800-800-800</phone>
-</member>
-<member>
-<email>jane@doe.com</email>
-<name>Jane Doe</name>
-<phone>1-801-802-803</phone>
-</member>
-</members>
-This XML payload represents a simple approach to generating a REST service’s response. As the recipes
-in this chapter progress, you will learn more sophisticated approaches, such as the ability to create widely
-used REST service payloads such as RSS, Atom, and JSON.
-If you look closely at the REST service endpoint or URL described in the previous paragraph, you’ll
-note that it has an .xml extension. If you try another extension—or even omit the extension—this particular
-REST service may not be triggered. This last behavior is directly tied to Spring MVC and how it handles view
-resolution. It has nothing do with REST services per se.
-By default, since the view associated with this particular REST service handler method returns XML,
-it’s triggered by an .xml extension. This allows the same handler method to support multiple views. For
-example, it can be convenient for a request like http://[host_name]/[app-name]/members.pdf to return
-the same information in a PDF document, as well as a request like http://[host_name]/[app-name]/
-members.html to return content in HTML or a request like http://[host_name]/[app-name]/members.xml
-to return XML for a REST request.
-So, what happens to a request with no URL extension, like http://[host_name]/[app-name]/members?
-This also depends heavily on Spring MVC view resolution. For this purpose, Spring MVC supports a process
-called content negotiation, by which a view is determined based on a request’s extension or HTTP headers.
-Since REST service requests typically have HTTP headers in the form Accept: application/xml,
-Spring MVC configured to use content negotiation can determine to serve XML (REST) payloads to such
-requests even if requests are made extensionless. This also allows extensionless requests to be made in
-formats such as HTML, PDF, and XLS, all simply based on HTTP headers. Recipe 3-7 in Chapter 3 discusses
-content negotiation.Chapter 4 ■ Spring reSt
-188
-Use @ResponseBody to Produce XML
-Using MarshallingView to produce XML is one way of producing results; however, when you want to have
-multiple representations (JSON, for instance) of the same data (a list of Member objects), adding another view
-can be a cumbersome task. Instead, you can rely on the Spring MVC HttpMessageConverters to convert
-an object to the representation requested by the user. The following code shows the changes made to
-RestMemberController:
+You have now a getMembersXml method and a getMembersJson method; both are basically the
+same with the distinction that they return a different view name. Notice the produces attribute on the
+@RequestMapping annotation. This is used to determine which method to call: /members.xml will now
+produce XML, whereas /members.json will produce JSON.
+Although this approach works, duplicating all the methods for the different supported view types isn’t a
+feasible solution for enterprise applications. You could create a helper method to reduce the duplication, but
+you would still need a lot of boilerplate because of the differences in the @RequestMapping annotations.
+Use @ResponseBody to Produce JSON
+Using a MappingJackson2JsonView to produce JSON is one way of producing results; however, as mentioned
+in the previous section, it can be troublesome, especially with multiple supported view types. Instead, you
+can rely on the Spring MVC HttpMessageConverters to convert an object to the representation requested by
+the user. The following code shows the changes made to RestMemberController:
 @Controller
 public class RestMemberController {
 ...
@@ -201,17 +142,17 @@ members.addMembers(memberService.findAll());
 return members;
 }
 }
-The first change is that you have now, additionally, annotated the controller method
-with @ResponseBody. This annotation tells Spring MVC that the result of the method should
-be used as the body of the response. Because you want XML, this marshalling is done by the
-Jaxb2RootElementHttpMessageConverter class provided by Spring. The second change is that because of
-the @ResponseBody annotation, you don’t need the view name anymore but can simply return the Members
-object.
+The first change is that you have now, additionally, annotated the controller method with @ResponseBody.
+This annotation tells Spring MVC that the result of the method should be used as the body of the response.
+Because you want JSON, this marshalling is done by the Jackson2JsonMessageConverter class provided by
+Spring. The second change is that because of the @ResponseBody annotation, you don’t need the view name
+anymore but can simply return the Members object.
 ■ Tip When using Spring 4 or higher instead of annotating the method with @ResponseBody, you can also
 annotate your controller with @RestController instead of @Controller, which would give the same result.
 this is especially convenient if you have a single controller with multiple methods.
-These changes also allow you to clean up your configuration, as you don’t need MarshallingView and
-Jaxb2Marshaller anymore.
+These changes also allow you to clean up your configuration because you don’t need
+MappingJackson2JsonView anymore.Chapter 4 ■ Spring reSt
+195
 package com.apress.springrecipes.court.web.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -221,111 +162,43 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @EnableWebMvc
 @ComponentScan(basePackages = "com.apress.springrecipes.court")
 public class CourtRestConfiguration {}
-When the application is deployed and you do request the members from http://localhost:8080/
-court/members.xml, it will yield the same results as before.Chapter 4 ■ Spring reSt
-189
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<members>
-<member>
-<email>marten@deinum.biz</email>
-<name>Marten Deinum</name>
-<phone>00-31-1234567890</phone>
-</member>
-<member>
-<email>john@doe.com</email>
-<name>John Doe</name>
-<phone>1-800-800-800</phone>
-</member>
-<member>
-<email>jane@doe.com</email>
-<name>Jane Doe</name>
-<phone>1-801-802-803</phone>
-</member>
-</members>
-Use @PathVariable to Limit the Results
-It’s common for REST service requests to have parameters. This is done to limit or filter a service’s payload.
-For example, a request in the form http://[host_name]/[app-name]/member/353/ can be used to retrieve
-information exclusively on member 353. Another variation can be a request like http://[host_name]/
-[app-name]/reservations/07-07-2010/ to retrieve reservations made on the date July 7, 2010.
-To use parameters for constructing a REST service in Spring, you use the @PathVariable annotation.
-The @PathVariable annotation is added as an input parameter to the handler method, per Spring’s MVC
-conventions, for it to be used inside the handler method body. The following snippet illustrates a handler
-method for a REST service using the @PathVariable annotation:
-import org.springframework.web.bind.annotation.PathVariable;
-@Controller
-public class RestMemberController {
-...
-@RequestMapping("/member/{memberid}")
-@ResponseBody
-public Member getMember(@PathVariable("memberid") long memberID) {
-return memberService.find(memberID);
+When the application is deployed and you request the members from http://localhost:8080/court/
+members.json, it will give the same results as before.
+{
+"members" : {
+"members" : [ {
+"name" : "Marten Deinum",
+"phone" : "00-31-1234567890",
+"email" : "marten@deinum.biz"
+}, {
+"name" : "John Doe",
+"phone" : "1-800-800-800",
+"email" : "john@doe.com"
+}, {
+"name" : "Jane Doe",
+"phone" : "1-801-802-803",
+"email" : "jane@doe.com"
+} ]
 }
 }
-Notice the @RequestMapping value contains {memberid}. Values surrounded by { } are used to indicate
-that URL parameters are variables. Further note that the handler method is defined with the input parameter
-@PathVariable("memberid") long memberID. This last declaration associates whatever memberid value
-forms part of the URL and assigns it to a variable named memberID that can be accessible inside the handler
-method. Therefore, REST endpoints in the form /member/353/ and /member/777/ will be processed by this
-last handler method, with the memberID variable being assigned values of 353 and 777, respectively. Inside
-the handler method, the appropriate queries can be made for members 353 and 777—via the memberID
-variable—and returned as the REST service’s payload.Chapter 4 ■ Spring reSt
-190
-A request to http://localhost:8080/court/member/2 will result in an XML representation of the
-member with an ID of 2.
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<member>
-<email>john@doe.com</email>
-<name>John Doe</name>
-<phone>1-800-800-800</phone>
-</member>
-In addition to the supporting { } notation, it’s also possible to use a wildcard (*) notation for defining
-REST endpoints. This is often the case when a design team has opted to use expressive URLs (often called
-pretty URLs) or opts to use search engine optimization (SEO) techniques to make a REST URL search engine
-friendly. The following snippet illustrates a declaration for a REST service using the wildcard notation:
-@RequestMapping("/member/*/{memberid}")
-@ResponseBody
-public Member getMember(@PathVariable("memberid") long memberID) { ... }
-In this case, the addition of a wildcard doesn’t have any influence over the logic performed by the
-REST service. But it will match endpoint requests in the form of /member/John+Smith/353/ and /member/
-Mary+Jones/353/, which can have an important impact on end user readability and SEO.
-It’s also worth mentioning that data binding can be used in the definition of handler methods for REST
-endpoints. The following snippet illustrates a declaration for a REST service using data binding:
-@InitBinder
-public void initBinder(WebDataBinder binder) {
-SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-binder.registerCustomEditor(Date.class, new CustomDateEditor(dateFormat, false));
-}
-@RequestMapping("/reservations/{date}")
-public void getReservation(@PathVariable("date") Date resDate) { ... }
-In this case, a request in the form http://[host_name]/[app-name]/reservations/07-07-2010/ is
-matched by this last handler method, with the value 07-07-2010 passed into the handler method—as the
-variable resDate—where it can be used to filter the REST web service payload.
-Use ResponseEntity to Inform the Client
-The endpoint for retrieving a single Member instance returns either a valid member or nothing at all. Both
-lead to a request that will send the HTTP response code 200, which means OK, back to the client. However,
-this is probably not what your users will expect. When working with resources, you should inform them of
-the fact that a resource cannot be found. Ideally, you would want to return the HTTP response code 404,
-which indicates “not found.” The following code snippet shows the modified getMember method:
-package com.apress.springrecipes.court.web;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-...Chapter 4 ■ Spring reSt
-191
-@Controller
-public class RestMemberController {
-...
-@RequestMapping("/member/{memberid}")
-@ResponseBody
-public ResponseEntity<Member> getMember(@PathVariable("memberid") long memberID) {
-Member member = memberService.find(memberID);
-if (member != null) {
-return new ResponseEntity<Member>(member, HttpStatus.OK);
-}
-return new ResponseEntity(HttpStatus.NOT_FOUND);
-}
-}
-The return value of the method has been changed to ResponseEntity<Member>. The ResponseEntity
-class in Spring MVC acts as a wrapper for an object to be used as the body of the result together with an
-HTTP status code. When you find a Member, it is returned with HttpStatus.OK, which corresponds to an HTTP
-status code of 200. When there is no result, you return HttpStatus.NOT_FOUND, corresponding to the HTTP
-status code 404, which means “not found.”
+You probably noticed that RestMemberController and CourtRestConfiguration are now the same as
+in recipe 4-1. When calling http://localhost:8080/court/members.xml, you will get XML.
+How is this possible without any additional configuration? Spring MVC will detect what is on the
+classpath; when it automatically detects JAXB 2, Jackson, and Rome (see recipe 4-4), it will register the
+appropriate HttpMessageConverter for the available technologies.
+Use GSON to Produce JSON
+Up until now you have been using Jackson to produce JSON from your objects; another popular library is
+GSON, and Spring has out-of-the-box support for it. To use GSON, you will need to add it to your classpath
+(instead of Jackson), and then it will be used to produce the JSON.
+When using Maven, add the following dependency:
+<dependency>
+<groupId>com.google.code.gson</groupId>
+<artifactId>gson</artifactId>
+<version>2.8.0</version>
+</dependency>Chapter 4 ■ Spring reSt
+196
+When using Gradle, add the following:
+compile 'com.google.code.gson:gson:2.8.0'
+This, just like when using Jackson, is all you need to implement JSON serialization with GSON. If you
+start the application and call http://localhost:8080/court/members.json, you will still receive JSON but
+now through GSON instead.
