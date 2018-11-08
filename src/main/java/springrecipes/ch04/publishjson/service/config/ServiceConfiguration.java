@@ -1,10 +1,9 @@
-/*
-package springrecipes.ch04.publishxml.service.config;
+package springrecipes.ch04.publishjson.service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import springrecipes.ch04.publishxml.service.InMemoryMemberService;
-import springrecipes.ch04.publishxml.service.MemberService;
+import springrecipes.ch04.publishjson.service.InMemoryMemberService;
+import springrecipes.ch04.publishjson.service.MemberService;
 
 @Configuration
 public class ServiceConfiguration {
@@ -13,4 +12,3 @@ public class ServiceConfiguration {
         return new InMemoryMemberService();
     }
 }
-*/

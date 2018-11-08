@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch04.publishxml.web.config;
 
 import org.springframework.context.annotation.Bean;
@@ -15,15 +16,17 @@ import springrecipes.ch04.domain.Members;
 
 @Configuration
 @EnableWebMvc
-@ComponentScan("springrecipes.ch04")
+@ComponentScan("springrecipes.ch04.publishxml")
 public class CourtRestConfiguration {
-    /*@Bean
+    */
+/*@Bean
     public ViewResolver internalResourceViewResolver() {
         InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
         viewResolver.setPrefix("/WEB-INF/jsp/");
         viewResolver.setSuffix(".jsp");
         return viewResolver;
-    }*/
+    }*//*
+
     @Bean
     public View membertemplate() {
         return new MarshallingView(jaxb2Marshaller());
@@ -41,3 +44,4 @@ public class CourtRestConfiguration {
         return new BeanNameViewResolver();
     }
 }
+*/

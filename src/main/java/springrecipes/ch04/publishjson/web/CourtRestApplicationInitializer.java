@@ -1,8 +1,7 @@
-/*
-package springrecipes.ch04.publishxml.web;
+package springrecipes.ch04.publishjson.web;
 
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
-import springrecipes.ch04.publishxml.web.config.CourtRestConfiguration;
+import springrecipes.ch04.publishjson.web.config.CourtRestConfiguration;
 
 public class CourtRestApplicationInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
     @Override
@@ -20,4 +19,3 @@ public class CourtRestApplicationInitializer extends AbstractAnnotationConfigDis
         return new String[]{"/"};
     }
 }
-*/
