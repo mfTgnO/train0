@@ -25,4 +25,11 @@ public class Members {
     public void addMembers(Collection<Member> members) {
         this.members.addAll(members);
     }
+
+    @Override
+    public String toString() {
+        return "Members{" +
+                "members=" + members +
+                '}';
+    }
 }

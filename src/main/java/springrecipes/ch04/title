@@ -1,4 +1,4 @@
-4-1. Publish XML with REST Services
-4-2. Publish JSON with REST Services
-4-3. Access a REST Service with Spring
-4-4. Publish RSS and Atom Feeds
+publishxml:4-1. Publish XML with REST Services
+publishjson:4-2. Publish JSON with REST Services
+accessarest:4-3. Access a REST Service with Spring
+publishrss:4-4. Publish RSS and Atom Feeds
