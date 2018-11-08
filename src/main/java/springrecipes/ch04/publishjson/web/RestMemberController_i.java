@@ -5,16 +5,16 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import springrecipes.ch04.domain.Members;
 import springrecipes.ch04.publishjson.service.MemberService;
-// localhost:8080/members
+// localhost:8080/members_i
 @Controller
-public class RestMemberController {
+public class RestMemberController_i {
     private final MemberService memberService;
 
-    public RestMemberController(MemberService memberService) {
+    public RestMemberController_i(MemberService memberService) {
         this.memberService = memberService;
     }
 
-    @RequestMapping("/members")
+    @RequestMapping("/members_i")
     public String getRestMembersJson(Model model) {
         // Return view jsonmembertemplate. Via resolver the view
         // will be mapped to a jackson ObjectMapper bound to the Member class
