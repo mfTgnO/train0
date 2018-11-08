@@ -7,6 +7,7 @@ public class CourtRestApplicationInitializer extends AbstractAnnotationConfigDis
     @Override
     protected Class<?>[] getRootConfigClasses() {
         return new Class<?>[]{CourtRestConfiguration.class};
+//        return null;
     }
 
     @Override
