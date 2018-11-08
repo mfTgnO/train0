@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.resolveuserlocales.service;
 
 import springrecipes.ch03.domain.Player;
@@ -35,3 +36,4 @@ public class ReservationServiceImpl implements ReservationService {
         return result;
     }
 }
+*/

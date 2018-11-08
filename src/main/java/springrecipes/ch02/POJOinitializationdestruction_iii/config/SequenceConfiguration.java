@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.POJOinitializationdestruction_iii.config;
 
 import org.springframework.context.annotation.Bean;
@@ -16,3 +17,4 @@ public class SequenceConfiguration {
         return sequence;
     }
 }
+*/

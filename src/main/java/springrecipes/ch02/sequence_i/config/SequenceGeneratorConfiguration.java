@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.sequence_i.config;
 
 import org.springframework.context.annotation.ComponentScan;
@@ -17,3 +18,4 @@ import org.springframework.context.annotation.FilterType;
         )})
 public class SequenceGeneratorConfiguration {
 }
+*/

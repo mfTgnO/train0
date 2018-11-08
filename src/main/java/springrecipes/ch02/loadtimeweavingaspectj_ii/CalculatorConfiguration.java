@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.loadtimeweavingaspectj_ii;
 
 import org.springframework.context.annotation.ComponentScan;
@@ -7,3 +8,4 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan
 public class CalculatorConfiguration {
 }
+*/

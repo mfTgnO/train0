@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.springenvironmentsandprofiles.config;
 
 import org.springframework.context.annotation.Bean;
@@ -33,3 +34,4 @@ public class ShopConfigurationAut {
         return p2;
     }
 }
+*/

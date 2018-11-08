@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.propertiesfiledata_ii.config;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -67,4 +68,4 @@ public class ShopConfiguration {
         p2.setCapacity(700);
         return p2;
     }
-}
+}*/

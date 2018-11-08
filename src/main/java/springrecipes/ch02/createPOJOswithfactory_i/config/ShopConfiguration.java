@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.createPOJOswithfactory_i.config;
 
 import org.springframework.context.annotation.Bean;
@@ -24,3 +25,4 @@ public class ShopConfiguration {
         return ProductCreator.createProduct("dvdrw");
     }
 }
+*/

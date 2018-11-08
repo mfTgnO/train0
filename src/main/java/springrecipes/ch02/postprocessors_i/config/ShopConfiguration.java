@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.postprocessors_i.config;
 
 import org.springframework.context.annotation.Bean;
@@ -40,3 +41,4 @@ public class ShopConfiguration {
         return c1;
     }
 }
+*/

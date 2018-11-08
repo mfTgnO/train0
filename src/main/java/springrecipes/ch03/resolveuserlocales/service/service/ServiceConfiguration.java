@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.resolveuserlocales.service.service;
 
 import org.springframework.context.annotation.Bean;
@@ -12,3 +13,4 @@ public class ServiceConfiguration {
         return new ReservationServiceImpl();
     }
 }
+*/

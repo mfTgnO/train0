@@ -1,9 +1,11 @@
+/*
 package springrecipes.ch02.i18ntextmessages.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 
+*/
 /*
 * The bean instance must have the name messageSource for the application context to detect it.
 Inside the bean definition you declare a String list via the setBasenames method to locate bundles
@@ -18,7 +20,8 @@ no such resource bundle or the message can’t be found, then a messages_en.prop
 the language is considered. If a resource bundle still can’t be found, the default messages.properties for
 all locales is chosen. For more information on resource bundle loading, you can refer to the Javadoc of the
 java.util.ResourceBundle class.
-* */
+* *//*
+
 @Configuration
 public class ShopConfiguration {
     @Bean
@@ -29,3 +32,4 @@ public class ShopConfiguration {
         return messageSource;
     }
 }
+*/

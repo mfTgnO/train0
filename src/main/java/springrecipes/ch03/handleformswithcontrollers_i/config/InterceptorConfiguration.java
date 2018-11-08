@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.handleformswithcontrollers_i.config;
 
 import org.springframework.context.annotation.Bean;
@@ -25,3 +26,4 @@ public class InterceptorConfiguration implements WebMvcConfigurer {
         return new ExtensionInterceptor();
     }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.resolveuserlocales.config;
 
 import org.springframework.context.annotation.Bean;
@@ -34,3 +35,4 @@ public class I18NConfiguration implements WebMvcConfigurer {
         return cookieLocaleResolver;
     }
 }
+*/

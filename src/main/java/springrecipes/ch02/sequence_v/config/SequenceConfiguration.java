@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.sequence_v.config;
 
 import org.springframework.context.annotation.Bean;
@@ -22,3 +23,4 @@ public class SequenceConfiguration {
         return sequence;
     }
 }
+*/

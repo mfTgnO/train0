@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.POJOinitializationdestruction_i.config;
 
 import org.springframework.context.annotation.Bean;
@@ -43,3 +44,4 @@ public class ShopConfiguration {
         return cashier;
     }
 }
+*/

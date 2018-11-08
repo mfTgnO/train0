@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.reuseaspectpointcut_i;
 
 import org.springframework.context.annotation.ComponentScan;
@@ -9,3 +10,4 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @ComponentScan
 public class CalculatorConfiguration {
 }
+*/

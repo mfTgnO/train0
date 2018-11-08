@@ -1,4 +1,4 @@
-package springrecipes.ch04.publishxml_ii.service.config;
+package springrecipes.ch04.publishxml.service;
 
 import org.springframework.stereotype.Service;
 import springrecipes.ch04.domain.Member;

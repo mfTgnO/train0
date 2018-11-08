@@ -1,13 +1,16 @@
+/*
 package springrecipes.ch02.shop_i;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+*/
 /*
  * To define instances of a POJO class in the Spring IoC container, you have to create a Java config class with
  * instantiation values. A Java config class with a POJO or bean definition made by invoking constructors would
  * look like this:
- * */
+ * *//*
+
 @Configuration
 public class ShopConfiguration {
     @Bean
@@ -24,3 +27,4 @@ public class ShopConfiguration {
         return p2;
     }
 }
+*/

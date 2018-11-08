@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.interceptrequests_i.web;
 
 import org.springframework.web.servlet.ModelAndView;
@@ -21,4 +22,4 @@ public class MeasurementInterceptor_ii extends HandlerInterceptorAdapter {
         long endTime = System.currentTimeMillis();
         modelAndView.addObject("handlingTime", endTime - startTime);
     }
-}
+}*/

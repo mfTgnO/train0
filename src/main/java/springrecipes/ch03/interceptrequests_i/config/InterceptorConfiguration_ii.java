@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.interceptrequests_i.config;
 
 import org.springframework.context.annotation.Configuration;
@@ -16,3 +17,4 @@ public class InterceptorConfiguration_ii implements WebMvcConfigurer {
         return new MeasurementInterceptor_ii();
     }
 }
+*/

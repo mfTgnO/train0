@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.resolveuserlocales.web;
 
 import org.springframework.stereotype.Controller;
@@ -52,3 +53,4 @@ public class ReservationQueryController {
         return "reservationQuery";
     }
 }
+*/

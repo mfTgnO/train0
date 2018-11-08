@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.sequence_iv.config;
 
 import org.springframework.context.annotation.Bean;
@@ -8,7 +9,8 @@ import springrecipes.ch02.sequence_iv.SequenceGenerator;
 
 @Configuration
 public class SequenceConfiguration {
-    /*@Bean
+    */
+/*@Bean
     public NumberPrefixGenerator numberPrefixGenerator() {
         return new NumberPrefixGenerator();
     }
@@ -18,7 +20,8 @@ public class SequenceConfiguration {
         DatePrefixGenerator datePrefixGenerator = new DatePrefixGenerator();
         datePrefixGenerator.setPattern("yyyyMMdd");
         return datePrefixGenerator;
-    }*/
+    }*//*
+
 
     @Bean
     public DatePrefixGenerator datePrefixGenerator() {
@@ -40,3 +43,4 @@ public class SequenceConfiguration {
         return sequence;
     }
 }
+*/

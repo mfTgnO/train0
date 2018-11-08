@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.resolveuserlocales.service;
 
 
@@ -8,3 +9,4 @@ import java.util.List;
 public interface ReservationService {
     List<Reservation> query(String courtName);
 }
+*/

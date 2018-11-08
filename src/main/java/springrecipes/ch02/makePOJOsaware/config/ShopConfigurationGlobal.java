@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.makePOJOsaware.config;
 
 import org.springframework.context.annotation.Bean;
@@ -17,3 +18,4 @@ public class ShopConfigurationGlobal {
         return c1;
     }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.resolveuserlocales.web;
 
 import org.springframework.web.servlet.ModelAndView;
@@ -27,3 +28,4 @@ public class ExtensionInterceptor extends HandlerInterceptorAdapter {
         }
     }
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.handleformswithcontrollers_i.config;
 
 import org.springframework.context.MessageSource;
@@ -41,3 +42,4 @@ public class I18NConfiguration implements WebMvcConfigurer {
         return messageSource;
     }
 }
+*/

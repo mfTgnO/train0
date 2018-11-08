@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.propertiesfiledata_i.config;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -14,12 +15,14 @@ import springrecipes.ch02.propertiesfiledata_i.Product;
 @PropertySource("classpath:discounts.properties")
 @ComponentScan("springrecipes.ch02.propertiesfiledata_i")
 public class ShopConfiguration {
-    /*
+    */
+/*
      * The syntax is @Value("${key:default_value}"). A search is done for the key value in all the loaded
      * application properties. If a matching key=value is found in the properties file, the corresponding value
      * is assigned to the bean property. If no matching key=value is found in the loaded application properties,
      * default_value (i.e., after ${key:) is assigned to the bean property.
-     * */
+     * *//*
+
 
     @Value("${specialcustomer.discount:0}")
     private double specialCustomerDiscountField;
@@ -58,4 +61,4 @@ public class ShopConfiguration {
         p2.setCapacity(700);
         return p2;
     }
-}
+}*/

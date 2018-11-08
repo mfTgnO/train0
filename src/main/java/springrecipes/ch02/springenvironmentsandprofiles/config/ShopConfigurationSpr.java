@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.springenvironmentsandprofiles.config;
 
 import org.springframework.context.annotation.Bean;
@@ -32,4 +33,4 @@ public class ShopConfigurationSpr {
         p2.setCapacity(700);
         return p2;
     }
-}
+}*/

@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.sequence_i;
 
 import org.springframework.context.annotation.Bean;
@@ -14,3 +15,4 @@ public class SequenceGeneratorConfiguration1 {
         return seqgen;
     }
 }
+*/

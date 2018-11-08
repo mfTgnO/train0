@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.createPOJOswithfactory_iii.config;
 
 import org.springframework.context.annotation.Bean;
@@ -51,4 +52,4 @@ public class ShopConfiguration {
         factory.setDiscount(0.1);
         return factory;
     }
-}
+}*/

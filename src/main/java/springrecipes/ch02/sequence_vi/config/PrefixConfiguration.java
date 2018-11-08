@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.sequence_vi.config;
 
 import org.springframework.context.annotation.Bean;
@@ -13,3 +14,4 @@ public class PrefixConfiguration {
         return datePrefixGenerator;
     }
 }
+*/

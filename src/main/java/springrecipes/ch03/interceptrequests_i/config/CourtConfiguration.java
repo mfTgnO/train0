@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.interceptrequests_i.config;
 
 import org.springframework.context.annotation.Bean;
@@ -15,4 +16,4 @@ public class CourtConfiguration {
         viewResolver.setSuffix(".jsp");
         return viewResolver;
     }
-}
+}*/

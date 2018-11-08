@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.interceptrequests_i.web;
 
 import org.springframework.stereotype.Controller;
@@ -34,4 +35,4 @@ public class ReservationQueryController {
         model.addAttribute("reservations", reservations);
         return "reservationQuery";
     }
-}
+}*/

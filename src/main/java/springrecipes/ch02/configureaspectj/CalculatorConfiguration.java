@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.configureaspectj;
 
 import org.aspectj.lang.Aspects;
@@ -22,3 +23,4 @@ public class CalculatorConfiguration {
         return complexCachingAspect;
     }
 }
+*/

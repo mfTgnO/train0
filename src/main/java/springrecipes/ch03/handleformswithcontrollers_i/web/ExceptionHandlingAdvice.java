@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch03.handleformswithcontrollers_i.web;
 
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -16,3 +17,4 @@ public class ExceptionHandlingAdvice {
         return "error";
     }
 }
+*/
