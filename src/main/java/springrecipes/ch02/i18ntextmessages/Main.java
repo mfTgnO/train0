@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.i18ntextmessages;
 
 import org.springframework.context.ApplicationContext;
@@ -16,3 +17,4 @@ public class Main {
         System.out.println("The I18N message for alert.inventory.checkout is: " + alert_inventory);
     }
 }
+*/

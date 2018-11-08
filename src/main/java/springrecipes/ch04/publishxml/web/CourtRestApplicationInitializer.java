@@ -1,7 +1,7 @@
 package springrecipes.ch04.publishxml.web;
 
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
-import springrecipes.ch04.web.config.CourtRestConfiguration;
+import springrecipes.ch04.publishxml.web.config.CourtRestConfiguration;
 
 public class CourtRestApplicationInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
     @Override

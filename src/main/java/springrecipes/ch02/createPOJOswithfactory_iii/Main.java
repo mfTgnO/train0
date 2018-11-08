@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.createPOJOswithfactory_iii;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -20,4 +21,4 @@ public class Main {
         cart2.addItem(dvdrw);
         System.out.println("Shopping cart 2 contains " + cart2.getItems());
     }
-}
+}*/

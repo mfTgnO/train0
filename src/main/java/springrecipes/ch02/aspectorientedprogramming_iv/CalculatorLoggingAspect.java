@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.aspectorientedprogramming_iv;
 
 import org.aspectj.lang.JoinPoint;
@@ -30,4 +31,4 @@ public class CalculatorLoggingAspect {
     public void logAfterThrowing(JoinPoint joinPoint, IllegalArgumentException e) {
         logger.error("Illegal argument {} in {}()", Arrays.toString(joinPoint.getArgs()), joinPoint.getSignature().getName());
     }
-}
+}*/

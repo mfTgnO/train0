@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.joinpointinformation;
 
 import org.aspectj.lang.JoinPoint;
@@ -22,4 +23,4 @@ public class CalculatorLoggingAspect {
         logger.info("This class : {}", joinPoint.getThis().getClass().getName());
 //        System.out.println("************************");
     }
-}
+}*/

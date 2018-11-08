@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.aspectorientedprogramming_iii;
 
 import org.aspectj.lang.JoinPoint;
@@ -24,4 +25,4 @@ public class CalculatorLoggingAspect {
     public void logAferReurning(JoinPoint joinPoint, Object result) {
         logger.info("The method {}() ends with {}", joinPoint.getSignature().getName(), result);
     }
-}
+}*/

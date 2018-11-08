@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.aspectprecedence_ii;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -19,3 +20,4 @@ public class Main {
         unitCalculator.kilometerToMile(5);
     }
 }
+*/

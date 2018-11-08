@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.shop_ii;
 
 import org.springframework.context.ApplicationContext;
@@ -22,3 +23,4 @@ public class Main {
         System.out.println("Shopping cart 2 contains " + cart2.getItems());
     }
 }
+*/

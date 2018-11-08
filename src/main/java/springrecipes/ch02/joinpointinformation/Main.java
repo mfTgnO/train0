@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.joinpointinformation;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -17,3 +18,4 @@ public class Main {
         unitCalculator.kilometerToMile(5);
     }
 }
+*/

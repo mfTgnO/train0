@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.introducestates;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -31,3 +32,4 @@ public class Main {
         System.out.println("unitCounter:" + unitCounter.getCount());
     }
 }
+*/

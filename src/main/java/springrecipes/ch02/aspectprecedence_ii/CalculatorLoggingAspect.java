@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.aspectprecedence_ii;
 
 import org.aspectj.lang.JoinPoint;
@@ -21,4 +22,4 @@ public class CalculatorLoggingAspect {
     public void logBefore(JoinPoint joinPoint) {
         logger.info("The method {}() begins with {}", joinPoint.getSignature().getName(), Arrays.toString(joinPoint.getArgs()));
     }
-}
+}*/

@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.POJOinitializationdestruction_i;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -26,3 +27,4 @@ public class Main {
         cashier.checkout(cart2);
     }
 }
+*/

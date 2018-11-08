@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.sequence_v;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -12,3 +13,4 @@ public class Main {
         System.out.println(generator.sequence());
     }
 }
+*/

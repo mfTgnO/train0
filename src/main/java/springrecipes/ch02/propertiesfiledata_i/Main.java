@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.propertiesfiledata_i;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -21,3 +22,4 @@ public class Main {
         System.out.println("Shopping cart 2 contains " + cart2.getItems());
     }
 }
+*/

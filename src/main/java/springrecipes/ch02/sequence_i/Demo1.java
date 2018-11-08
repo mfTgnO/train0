@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.sequence_i;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -43,3 +44,4 @@ public class Demo1 {
     }
 }
 
+*/

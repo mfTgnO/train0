@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.useaopforintroductions;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -26,3 +27,4 @@ public class Main {
 
     }
 }
+*/

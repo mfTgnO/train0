@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.POJOinitializationdestruction_iii;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -13,3 +14,4 @@ public class Main {
         System.out.println(sequence.getSequence());
     }
 }
+*/

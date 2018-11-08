@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.aspectorientedprogramming_v;
 
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -26,4 +27,4 @@ public class CalculatorLoggingAspect {
             throw e;
         }
     }
-}
+}*/

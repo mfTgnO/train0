@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch02.propertiesfiledata_ii;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -33,3 +34,4 @@ public class Main {
         System.out.println(props);
     }
 }
+*/
