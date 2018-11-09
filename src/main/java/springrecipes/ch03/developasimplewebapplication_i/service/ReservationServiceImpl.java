@@ -1,10 +1,9 @@
-/*
 package springrecipes.ch03.developasimplewebapplication_i.service;
 
 import org.springframework.stereotype.Service;
-import springrecipes.ch03.developasimplewebapplication_i.domain.Player;
-import springrecipes.ch03.developasimplewebapplication_i.domain.Reservation;
-import springrecipes.ch03.developasimplewebapplication_i.domain.SportType;
+import springrecipes.ch03.domain.Player;
+import springrecipes.ch03.domain.Reservation;
+import springrecipes.ch03.domain.SportType;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -31,4 +30,4 @@ public class ReservationServiceImpl implements ReservationService {
         reservations.add(new Reservation("Tennis #2", LocalDate.of(2008, 1, 14), 20,
                 new Player("James", "N/A"), TENNIS));
     }
-}*/
+}

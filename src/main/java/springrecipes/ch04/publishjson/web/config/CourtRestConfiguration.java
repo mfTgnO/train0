@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch04.publishjson.web.config;
 
 import org.springframework.context.annotation.Bean;
@@ -42,3 +43,4 @@ public class CourtRestConfiguration {
         return new BeanNameViewResolver();
     }
 }
+*/

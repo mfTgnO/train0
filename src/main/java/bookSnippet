@@ -1,204 +1,311 @@
-4-2. Publish JSON with REST Services
+Spring MVC: Async Processing
+When the Servlet API was released, the majority of the implementing containers used one thread per
+request. This meant a thread was blocked until the request processing had finished and the response was
+sent to the client.
+However, in those early days, there weren’t as many devices connected to the Internet as today. Because
+of the increased number of devices, the number of HTTP requests being handled has grown significantly, and
+because of this increase, for lots of web applications, keeping a thread blocked isn’t feasible anymore. As of
+the Servlet 3 specification, it is possible to handle an HTTP request asynchronously and release the thread
+that initially handled HTTP request. The new thread will run in the background, and as soon as the result is
+available, it will be written to the client. This, when done right, can all take place in a nonblocking way on a
+Servlet 3.1–compliant servlet container. Of course, all resources being used also would have to be nonblocking.
+In the past couple of years, there has also been an uptick in reactive programming, and as of Spring 5,
+it is possible to write reactive web applications. A reactive Spring project utilizes Project Reactor (just like
+Spring, it is maintained by Pivotal) as an implementation of the Reactive Streams API. It goes beyond the
+scope of this book to do a full dive into reactive programming, but in short it is a way of doing nonblocking
+functional programming.
+Traditionally, when working with web applications, there would be a request; HTML would be rendered on
+the server and then get sent back to the client. The last couple of years, the job of rendering HTML moved to the
+client, and communication was done not through HTML but by returning JSON, XML, or another representation
+to the client. This was traditionally still a request-and-response cycle although it was driven by an async call from
+the client through the XMLHttpRequest object. However, there are also other ways of communicating between
+the client and server; you could utilize server-sent events to have one-way communication from the server to the
+client, and for full-duplex communication, you could use the WebSocket protocol.
+5-1. Handle Requests Asynchronously with
+Controllers and TaskExecutor
 Problem
-You want to publish a JavaScript Object Notation (JSON)–based REST service with Spring.
+To reduce the load on the servlet container, you want to asynchronously handle a request.
 Solution
-JSON has blossomed into a favorite payload format for REST services. However, unlike most REST service
-payloads, which rely on XML markup, JSON is different in the sense that its content is a special notation
-based on the JavaScript language. For this recipe, in addition to relying on Spring’s REST support, you will
-also use the MappingJackson2JsonView class that forms part of Spring to facilitate the publication of JSON
-content.
-■ Note the MappingJackson2JsonView class depends on the presence of the Jackson JSOn processor
-library, version 2, which can be downloaded at http://wiki.fasterxml.com/JacksonDownload. if you are
-using Maven or gradle you can simply add the Jackson library as a dependency in your projects build file.
-If your Spring applications incorporate Ajax designs, it’s likely that you’ll find yourself designing REST
-services that publish JSON as their payload. This is mainly because of the limited processing capabilities
-in browsers. Although browsers can process and extract information from REST services that publish XML
-payloads, it’s not very efficient. By instead delivering payloads in JSON, which is based on a language for
-which browsers have a native interpreter—JavaScript—the processing and extraction of data becomes
-more efficient. Unlike RSS and Atom feeds, which are standards, JSON has no specific structure it needs
-to follow—except its syntax, which you’ll explore shortly. Therefore, a JSON element’s payload structure is
-likely to be determined in coordination with the team members charged with an application’s Ajax design.Chapter 4 ■ Spring reSt
-192
+When a request comes in, it is handled synchronously, which blocks the HTTP request-handling thread. The
+response stays open and is available to be written to. This is useful when a call, for instance, takes some time
+to finish. Instead of blocking threads, you can have this processed in the background and return a value to
+the user when finished.Chapter 5 ■ Spring MVC: aSynC proCeSSing
+210
 How It Works
-The first thing you need to do is determine the information you want to publish as a JSON payload. This
-information can be located in an RDBMS or text file, be accessed through JDBC or ORM, or inclusively be
-part of a Spring bean or some other type of construct. Describing how to obtain this information would
-go beyond the scope of this recipe, so we will assume you’ll use whatever means you deem appropriate to
-access it. In case you’re unfamiliar with JSON, the following snippet illustrates a fragment of this format:
-{
-"glossary": {
-"title": "example glossary",
-"GlossDiv": {
-"title": "S",
-"GlossList": {
-"GlossEntry": {
-"ID": "SGML",
-"SortAs": "SGML",
-"GlossTerm": "Standard Generalized Markup Language",
-"Acronym": "SGML",
-"Abbrev": "ISO 8879:1986",
-"GlossDef": {
-"para": "A meta-markup language, used to create markup
-languages such as DocBook.",
-"GlossSeeAlso": ["GML", "XML"]
-},
-"GlossSee": "markup"
+As mentioned in recipe 3-1, Spring MVC supports a number of return types from methods. In addition to the
+return types, the types in Table 5-1 are processed in an asynchronous way.
+The generic async return types can hold any of the return types for the controller, including an object to
+be added to the model, the name of the view, or even a ModelAndView object.
+Configure Async Processing
+To use the async processing features of Spring MVC, you first have to enable them. Async request-handling
+support has been added to the Servlet 3.0 specification, and to enable it, you have to tell all your filters
+and servlets to behave asynchronously. To do this, you can call the setAsyncSupported() method when
+registering a filter or servlet.
+When writing a WebApplicationInitializer, you have to do the following:
+public class CourtWebApplicationInitializer implements WebApplicationInitializer {
+public void onStartup(ServletContext ctx) {
+DispatcherServlet servlet = new DispatcherServlet();
+ServletRegistration.Dynamic registration = ctx.addServlet("dispatcher", servlet);
+registration.setAsyncSupported(true);
 }
-}
-}
-}
-}
-As you can observe, a JSON payload consists of text and separators such as { , } ,[ , ] , :, and ". We won’t
-go into details about using one separator over another, but it suffices to say this type of syntax makes it easier
-for a JavaScript engine to access and manipulate data than if it was to process it in an XML-type format.
-Use MappingJackson2JsonView to Produce XML
-Since you’ve already explored how to publish data using a REST service in recipes 4-1 and 4-3, we’ll cut to the
-chase and show you the actual handler method needed in a Spring MVC controller to achieve this process.
-@RequestMapping("/members")
-public String getRestMembers(Model model) {
-Members members = new Members();
-members.addMembers(memberService.findAll());
-model.addAttribute("members", members);
-return "jsonmembertemplate";
-}Chapter 4 ■ Spring reSt
-193
-You probably notice that it is quite similar to the controller method mentioned in recipe 4-1. The only
-difference is that you return a different name for the view. The name of the view you are returning here,
-jsonmembertemplate, is different and maps to a MappingJackson2JsonView view. You need to configure this
-view in your configuration class.
-@Configuration
-@EnableWebMvc
-@ComponentScan(basePackages = "com.apress.springrecipes.court")
-public class CourtRestConfiguration {
-...
-@Bean
-public View jsonmembertemplate() {
-MappingJackson2JsonView view = new MappingJackson2JsonView();
-view.setPrettyPrint(true);
-return view;
-}
-}
-The MappingJackson2JsonView view uses the Jackson2 library to convert objects to and from JSON. It uses
-a Jackson2 ObjectMapper instance for the conversion. When a request is made to http://localhost:8080/
-court/members.json, the controller method will be invoked, and a JSON representation will be returned.
-{
-"members" : {
-"members" : [ {
-"name" : "Marten Deinum",
-"phone" : "00-31-1234567890",
-"email" : "marten@deinum.biz"
-}, {
-"name" : "John Doe",
-"phone" : "1-800-800-800",
-"email" : "john@doe.com"
-}, {
-"name" : "Jane Doe",
-"phone" : "1-801-802-803",
-"email" : "jane@doe.com"
-} ]
-}
-}
-Actually, this JSON will be produced by each call to /members or /members.* (for instance, /members.xml
-will also produce JSON). Let’s add the method and view from recipe 4-1 to the controller.
-@Controller
-public class RestMemberController {
-...
-@RequestMapping(value="/members", produces=MediaType.APPLICATION_XML_VALUE)
-public String getRestMembersXml(Model model) {
-Members members = new Members();
-members.addMembers(memberService.findAll());
-model.addAttribute("members", members);
-return "xmlmembertemplate";
-}Chapter 4 ■ Spring reSt
-194
-@RequestMapping(value="/members", produces= MediaType.APPLICATION_JSON_VALUE)
-public String getRestMembersJson(Model model) {
-Members members = new Members();
-members.addMembers(memberService.findAll());
-model.addAttribute("members", members);
-return "jsonmembertemplate";
-}
-}
-You have now a getMembersXml method and a getMembersJson method; both are basically the
-same with the distinction that they return a different view name. Notice the produces attribute on the
-@RequestMapping annotation. This is used to determine which method to call: /members.xml will now
-produce XML, whereas /members.json will produce JSON.
-Although this approach works, duplicating all the methods for the different supported view types isn’t a
-feasible solution for enterprise applications. You could create a helper method to reduce the duplication, but
-you would still need a lot of boilerplate because of the differences in the @RequestMapping annotations.
-Use @ResponseBody to Produce JSON
-Using a MappingJackson2JsonView to produce JSON is one way of producing results; however, as mentioned
-in the previous section, it can be troublesome, especially with multiple supported view types. Instead, you
-can rely on the Spring MVC HttpMessageConverters to convert an object to the representation requested by
-the user. The following code shows the changes made to RestMemberController:
-@Controller
-public class RestMemberController {
-...
-@RequestMapping("/members")
-@ResponseBody
-public Members getRestMembers() {
-Members members = new Members();
-members.addMembers(memberService.findAll());
-return members;
-}
-}
-The first change is that you have now, additionally, annotated the controller method with @ResponseBody.
-This annotation tells Spring MVC that the result of the method should be used as the body of the response.
-Because you want JSON, this marshalling is done by the Jackson2JsonMessageConverter class provided by
-Spring. The second change is that because of the @ResponseBody annotation, you don’t need the view name
-anymore but can simply return the Members object.
-■ Tip When using Spring 4 or higher instead of annotating the method with @ResponseBody, you can also
-annotate your controller with @RestController instead of @Controller, which would give the same result.
-this is especially convenient if you have a single controller with multiple methods.
-These changes also allow you to clean up your configuration because you don’t need
-MappingJackson2JsonView anymore.Chapter 4 ■ Spring reSt
-195
-package com.apress.springrecipes.court.web.config;
+} ■
+Note When doing async processing, all the servlet filters and servlets in your app should have this
+property switched to true or async processing won’t work!
+Table 5-1. Asynchronous Return Types
+Type Description
+DeferredResult Async result produced later from another thread
+ListenableFuture<?> Async result produced later from another thread; an equivalent alternative for
+DeferredResult
+CompletableStage<?> /
+CompletableFuture<?>
+Async result produced later from another thread; an equivalent alternative for
+DeferredResult
+Callable<?> Async computation with the result produced after the computation finishes
+ResponseBodyEmitter Can be used to write multiple objects to the response asynchronously
+SseEmitter Can be used to write a server-sent event asynchronously
+StreamingResponseBody Can be used to write to OutputStream asynchronouslyChapter 5 ■ Spring MVC: aSynC proCeSSing
+211
+Luckily, Spring helps you with this, and when using the AbstractAnnotationConfigDispatcherServlet
+Initializer as a superclass, this property is enabled by default for the registered DispatcherServlet and
+filters. To change it, override isAsyncSupported() and implement the logic to determine whether it should
+be on or off.
+Depending on your needs, you probably also need to configure an AsyncTaskExecutor and wire that in
+the MVC configuration.
+package com.apress.springrecipes.court.config;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 @Configuration
-@EnableWebMvc
-@ComponentScan(basePackages = "com.apress.springrecipes.court")
-public class CourtRestConfiguration {}
-When the application is deployed and you request the members from http://localhost:8080/court/
-members.json, it will give the same results as before.
-{
-"members" : {
-"members" : [ {
-"name" : "Marten Deinum",
-"phone" : "00-31-1234567890",
-"email" : "marten@deinum.biz"
-}, {
-"name" : "John Doe",
-"phone" : "1-800-800-800",
-"email" : "john@doe.com"
-}, {
-"name" : "Jane Doe",
-"phone" : "1-801-802-803",
-"email" : "jane@doe.com"
-} ]
+public class AsyncConfiguration extends WebMvcConfigurationSupport {
+@Override
+protected void configureAsyncSupport(AsyncSupportConfigurer configurer) {
+configurer.setDefaultTimeout(5000);
+configurer.setTaskExecutor(mvcTaskExecutor());
+}
+@Bean
+public ThreadPoolTaskExecutor mvcTaskExecutor() {
+ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+taskExecutor.setThreadGroupName("mvc-executor");
+return taskExecutor;
 }
 }
-You probably noticed that RestMemberController and CourtRestConfiguration are now the same as
-in recipe 4-1. When calling http://localhost:8080/court/members.xml, you will get XML.
-How is this possible without any additional configuration? Spring MVC will detect what is on the
-classpath; when it automatically detects JAXB 2, Jackson, and Rome (see recipe 4-4), it will register the
-appropriate HttpMessageConverter for the available technologies.
-Use GSON to Produce JSON
-Up until now you have been using Jackson to produce JSON from your objects; another popular library is
-GSON, and Spring has out-of-the-box support for it. To use GSON, you will need to add it to your classpath
-(instead of Jackson), and then it will be used to produce the JSON.
-When using Maven, add the following dependency:
-<dependency>
-<groupId>com.google.code.gson</groupId>
-<artifactId>gson</artifactId>
-<version>2.8.0</version>
-</dependency>Chapter 4 ■ Spring reSt
-196
-When using Gradle, add the following:
-compile 'com.google.code.gson:gson:2.8.0'
-This, just like when using Jackson, is all you need to implement JSON serialization with GSON. If you
-start the application and call http://localhost:8080/court/members.json, you will still receive JSON but
-now through GSON instead.
+To configure async processing, you need to override the configureAsyncSupport method of
+WebMvcConfigurationSupport; overriding this method gives you access to the AsyncSupportConfigurer and
+allows you to set the defaultTimeout and AsyncTaskExecutor values. The timeout is set to five seconds, and
+for an executor, you will use a ThreadPoolTaskExecutor (see also recipe 2-23).
+Write an Asynchronous Controller
+Writing a controller and having it handle the request asynchronously is as simple as changing the return
+type of the controller’s handler method. Let’s imagine that the call to ReservationService.query takes quite
+some time, but you don’t want to block the server for that.Chapter 5 ■ Spring MVC: aSynC proCeSSing
+212
+Use a Callable
+Here’s how to use a callable:
+package com.apress.springrecipes.court.web;
+import com.apress.springrecipes.court.Delayer;
+import com.apress.springrecipes.court.domain.Reservation;
+import com.apress.springrecipes.court.service.ReservationService;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.util.List;
+import java.util.concurrent.Callable;
+@Controller
+@RequestMapping("/reservationQuery")
+public class ReservationQueryController {
+private final ReservationService reservationService;
+public ReservationQueryController(ReservationService reservationService) {
+this.reservationService = reservationService;
+}
+@GetMapping
+public void setupForm() {}
+@PostMapping
+public Callable<String> sumbitForm(@RequestParam("courtName") String courtName, Model model) {
+return () -> {
+List<Reservation> reservations = java.util.Collections.emptyList();
+if (courtName != null) {
+Delayer.randomDelay(); // Simulate a slow service
+reservations = reservationService.query(courtName);
+}
+model.addAttribute("reservations", reservations);
+return "reservationQuery";
+};
+}
+}
+If you look at the submitForm method, it now returns a Callable<String> instead of returning a String
+directly. Inside the newly constructed Callable<String>, there is a random wait to simulate a delay before
+calling the query method.Chapter 5 ■ Spring MVC: aSynC proCeSSing
+213
+Now when making a reservation, you will see something like this in the logs:
+2017-06-20 10:37:04,836 [nio-8080-exec-2] DEBUG o.s.w.c.request.async.WebAsyncManager :
+Concurrent handling starting for POST [/court/reservationQuery]
+2017-06-20 10:37:04,838 [nio-8080-exec-2] DEBUG o.s.web.servlet.DispatcherServlet :
+Leaving response open for concurrent processing
+2017-06-20 10:37:09,954 [mvc-executor-1 ] DEBUG o.s.w.c.request.async.WebAsyncManager :
+Concurrent result value [reservationQuery] - dispatching request to resume processing
+2017-06-20 10:37:09,959 [nio-8080-exec-3] DEBUG o.s.web.servlet.DispatcherServlet :
+DispatcherServlet with name 'dispatcher' resumed processing POST request for [/court/
+reservationQuery]
+Notice that request handling is handled on a certain thread (here nio-8080-exec-2), which is released,
+and then another thread does the processing and returns the result (here mvc-executor-1). Finally, the
+request is dispatched to the DispatcherServlet again to handle the result on yet another thread.
+Use a DeferredResult
+Instead of a Callable<String>, you could have used a DeferredResult<String>. When using a
+DeferredResult, you need to construct an instance of this class, submit a task to be async processed, and in
+that task fill the result of the DeferredResult using the setResult method. When an exception occurs, you
+can pass this exception to the setErrorResult method of the DeferredResult.
+package com.apress.springrecipes.court.web;
+import com.apress.springrecipes.court.Delayer;
+import com.apress.springrecipes.court.domain.Reservation;
+import com.apress.springrecipes.court.service.ReservationService;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.async.DeferredResult;
+import java.util.List;
+@Controller
+@RequestMapping("/reservationQuery")
+public class ReservationQueryController {
+private final ReservationService reservationService;
+private final TaskExecutor taskExecutor;Chapter 5 ■ Spring MVC: aSynC proCeSSing
+214
+public ReservationQueryController(ReservationService reservationService,
+AsyncTaskExecutor taskExecutor) {
+this.reservationService = reservationService;
+this.taskExecutor = taskExecutor;
+}
+@GetMapping
+public void setupForm() {}
+@PostMapping
+public DeferredResult<String> sumbitForm(@RequestParam("courtName") String courtName,
+Model model) {
+final DeferredResult<String> result = new DeferredResult<>();
+taskExecutor.execute(() -> {
+List<Reservation> reservations = java.util.Collections.emptyList();
+if (courtName != null) {
+Delayer.randomDelay(); // Simulate a slow service
+reservations = reservationService.query(courtName);
+}
+model.addAttribute("reservations", reservations);
+result.setResult("reservationQuery");
+});
+return result;
+}
+}
+The method now returns a DeferredResult<String>, which is still the name of the view to render. The
+actual result is set through a Runnable, which is passed to the execute method of the injected TaskExecutor.
+The main difference between returning a DeferredResult and a Callable is that for a DeferredResult you
+have to create your own Thread (or delegate it to a TaskExecutor); for a Callable, that isn’t needed.
+Use a CompletableFuture
+Change the signature of the method to return a CompletableFuture<String> and use the TaskExecutor to
+async execute the code.
+package com.apress.springrecipes.court.web;
+import com.apress.springrecipes.court.Delayer;
+import com.apress.springrecipes.court.domain.Reservation;
+import com.apress.springrecipes.court.service.ReservationService;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;Chapter 5 ■ Spring MVC: aSynC proCeSSing
+215
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+@Controller
+@RequestMapping("/reservationQuery")
+public class ReservationQueryController {
+private final ReservationService reservationService;
+private final TaskExecutor taskExecutor;
+public ReservationQueryController(ReservationService reservationService,
+TaskExecutor taskExecutor) {
+this.reservationService = reservationService;
+this.taskExecutor = taskExecutor;
+}
+@GetMapping
+public void setupForm() {}
+@PostMapping
+public CompletableFuture<String> sumbitForm(@RequestParam("courtName")
+String courtName, Model model) {
+return CompletableFuture.supplyAsync(() -> {
+List<Reservation> reservations = java.util.Collections.emptyList();
+if (courtName != null) {
+Delayer.randomDelay(); // Simulate a slow service
+reservations = reservationService.query(courtName);
+}
+model.addAttribute("reservations", reservations);
+return "reservationQuery";
+}, taskExecutor);
+}
+}
+When calling supplyAsync (or when using void; you could use runAsync), you submit a task and get
+back a CompletableFuture. Here you use the supplyAsync method, which takes both a Supplier and an
+Executor so that you can reuse the TaskExecutor for async processing. If you use the supplyAsync method,
+which takes only a Supplier, it will be executed using the default fork/join pool available on the JVM.
+When returning a CompletableFuture, you can take advantage of all the features of it, such as
+composing and chaining multiple CompletableFuture instances.Chapter 5 ■ Spring MVC: aSynC proCeSSing
+216
+Use a ListenableFuture
+Spring provides the ListenableFuture interface, which is a Future implementation that will do a callback
+when the Future has completed. To create a ListenableFuture, you would need to submit a task to
+an AsyncListenableTaskExecutor, which will return a ListenableFuture. The previously configured
+ThreadPoolTaskExecutor is an implementation of the AsyncListenableTaskExecutor interface.
+// FINAL
+package com.apress.springrecipes.court.web;
+import com.apress.springrecipes.court.Delayer;
+import com.apress.springrecipes.court.domain.Reservation;
+import com.apress.springrecipes.court.service.ReservationService;
+import org.springframework.core.task.AsyncListenableTaskExecutor;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.util.List;
+@Controller
+@RequestMapping("/reservationQuery")
+public class ReservationQueryController {
+private final ReservationService reservationService;
+private final AsyncListenableTaskExecutor taskExecutor;
+public ReservationQueryController(ReservationService reservationService,
+AsyncListenableTaskExecutor taskExecutor) {
+this.reservationService = reservationService;
+this.taskExecutor = taskExecutor;
+}
+@GetMapping
+public void setupForm() {}
+@PostMapping
+public ListenableFuture<String> sumbitForm(@RequestParam("courtName")
+String courtName, Model model) {
+return taskExecutor.submitListenable(() -> {Chapter 5 ■ Spring MVC: aSynC proCeSSing
+217
+List<Reservation> reservations = java.util.Collections.emptyList();
+if (courtName != null) {
+Delayer.randomDelay(); // Simulate a slow service
+reservations = reservationService.query(courtName);
+}
+model.addAttribute("reservations", reservations);
+return "reservationQuery";
+});
+}
+}
+You submit a task to the taskExecutor using the submitListenable method; this returns a
+ListenableFuture, which in turn can be used as the result for the method.
+You might wonder where the success and failure callbacks are for the created ListenableFuture.
+Spring MVC will adapt the ListenableFuture to a DeferredResult and upon successful completion will
+call DeferredResult.setResult and, when an error happens, DeferredResult.setErrorResult. This is all
+handled for you with one of the HandlerMethodReturnValueHandler implementations shipped with Spring;
+in this case, it is handled by DeferredResultMethodReturnValueHandler.
