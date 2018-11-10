@@ -27,10 +27,10 @@ public class ReservationFormController {
         this.reservationService = reservationService;
     }
 
-    @ModelAttribute("SportTypes")
+    /*@ModelAttribute("SportTypes")
     public List<SportType> populateSportTypes() {
         return reservationService.getAllSportTypes();
-    }
+    }*/
 
     @GetMapping
     public String setupForm(@RequestParam(required = true, value = "username") String username, Model model) {
@@ -52,7 +52,6 @@ public class ReservationFormController {
                 status.setComplete();
                 return "redirect:reservationSuccess";
             }
-        }
+        };
     }
-
 }

@@ -16,6 +16,12 @@ import java.util.Objects;
 
 @Service
 public class InMemoryReservationService implements ReservationService {
+    public static void main(String[] args) {
+        InMemoryReservationService inMemoryReservationService = new InMemoryReservationService();
+        Flux<SportType> allSportTypes = inMemoryReservationService.getAllSportTypes();
+        System.out.println(allSportTypes);
+    }
+
     public static final SportType TENNIS = new SportType(1, "Tennis");
     public static final SportType SOCCER = new SportType(2, "Soccer");
     private final List<Reservation> reservations = new ArrayList<>();

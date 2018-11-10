@@ -28,11 +28,11 @@ public class ReservationSummaryController {
     }
 
     @RequestMapping(method = RequestMethod.GET)
-    public String generateSummary(@RequestParam(required = true, value = "date") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate selectedDate, Model model) {
+    /*public String generateSummary(@RequestParam(required = true, value = "date") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate selectedDate, Model model) {
         List<Reservation> reservations = reservationService.findByDate(selectedDate);
         model.addAttribute("reservations", reservations);
         return "reservationSummary";
-    }
+    }*/
 
     @ExceptionHandler
     public void handle(ServletRequestBindingException ex, @RequestParam(required = true, value = "date") String date) {

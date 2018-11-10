@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch04.publishjson.web;
 
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
@@ -20,3 +21,4 @@ public class CourtRestApplicationInitializer extends AbstractAnnotationConfigDis
         return new String[]{"/"};
     }
 }
+*/
