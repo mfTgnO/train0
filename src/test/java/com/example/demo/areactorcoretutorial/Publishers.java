@@ -1,11 +1,14 @@
 package com.example.demo.areactorcoretutorial;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Iterator;
 
 /*Reactive programming is about building asynchronous, non-blocking, and event-driven applications that can easily scale.
 Reactor is a Reactive library for building non-blocking applications. It is based on the Reactive Streams Specification.
@@ -56,7 +59,72 @@ public class Publishers {
     In the second example, we mapped a Flux emitting names to a Flux emitting the names in lower-case after applying a
     filter that passed only names starting with 'k'. We verified that the resulting Flux emitted only names starting with 'k' in lower-case.*/
     @Test
-    public void zipping(){
+    public void zipping() {
+        Flux<String> titles = Flux.just("Mr.", "Mrs.");
+        Flux<String> firstNames = Flux.just("John", "Jane");
+        Flux<String> lastNames = Flux.just("Doe", "Blake");
 
+        Flux<String> names = Flux.zip(titles, firstNames, lastNames)
+                .map(t -> t.getT1() + " " + t.getT2() + " " + t.getT3());
+
+        StepVerifier.create(names).expectNext("Mr. John Doe", "Mrs. Jane Blake").verifyComplete();
+
+        Flux<Long> delay = Flux.interval(Duration.ofMillis(5));
+        Flux<String> firstNamesWithDelay = firstNames.zipWith(delay, (s, l) -> s);
+
+        Flux<String> namesWithDelay = Flux.zip(titles, firstNamesWithDelay, lastNames)
+                .map(t -> t.getT1() + " " + t.getT2() + " " + t.getT3());
+
+        StepVerifier.create(namesWithDelay).expectNext("Mr. John Doe", "Mrs. Jane Blake").verifyComplete();
     }
+
+    /*In the first example, we have 3 Fluxes emitting the title, first name, and the last name.
+    Flux.zip is combining them in a strict sequence (when all Fluxes have emitted their nth item).
+    We then concatenated them to create a Flux emitting the full names.
+
+    In the second example, we created a Flux that generates a long value every 5 ms.
+    We then combined it with the Flux firstNames. Hence, the resulting Flux will emit a value after every 5 ms.
+    We used this Flux similarly as in the previous example and verified that the sequence of combination is maintained despite the delay.*/
+
+    @Test
+    public void interleave() {
+        Flux<Long> delay = Flux.interval(Duration.ofMillis(5));
+        Flux<String> alphabetsWithDelay = Flux.just("A", "B").zipWith(delay, (s, l) -> s);
+        Flux<String> alphabetsWithoutDelay = Flux.just("C", "D");
+
+        Flux<String> interleavedFlux = alphabetsWithDelay.mergeWith(alphabetsWithoutDelay);
+        StepVerifier.create(interleavedFlux).expectNext("C", "D", "A", "B").verifyComplete();
+
+        Flux<String> nonInterleavedFlux = alphabetsWithDelay.concatWith(alphabetsWithoutDelay);
+        StepVerifier.create(nonInterleavedFlux).expectNext("A", "B", "C", "D").verifyComplete();
+    }
+
+    /*Interleaving is a concept in which data is written non-sequentially to improve performance.
+    We have two Fluxes, one of them emitting values with a delay. Flux.mergeWith merges them into an interleaved sequence.
+    Hence, we see that the sequence has changed.
+    Flux.concatWith merges them into a non-interleaved sequence. Hence, we see that the sequence remains the same despite the delay.*/
+    @Test
+    public void block() {
+        String name = Mono.just("Jesse").block();
+        Assert.assertEquals("Jesse", name);
+
+        Iterator<String> namesIterator = Flux.just("Tom", "Peter").toIterable().iterator();
+        Assert.assertEquals("Tom", namesIterator.next());
+        Assert.assertEquals("Peter", namesIterator.next());
+        Assert.assertFalse(namesIterator.hasNext());
+    }
+    /*We can subscribe to a Publisher indefinitely and get the values in a blocking manner.
+    Conclusion
+
+    I have tried explaining, with simple examples, the very basics of reactor-core. You can read more about Project Reactor here.
+    https://projectreactor.io/docs/core/release/reference/docs/index.html
+
+    To learn how to create Reactive applications using Spring Boot And Reactor, you can see these tutorials.
+
+        Spring Boot Reactive Tutorial
+        https://dzone.com/articles/spring-boot-reactive-tutorial
+        Spring Boot: Server-Sent Events
+        https://dzone.com/articles/spring-boot-server-sent-events-tutorial
+
+    You can find the complete example on GitHub.*/
 }
