@@ -37,10 +37,10 @@ public class ReservationQueryController {
             // Create reservation list
             List<Reservation> reservations = Collections.emptyList();
             // Make a query if parameter is not null
-            /*if (courtName != null) {
+            if (courtName != null) {
                 Delayer.randomDelay();// Simulate a slow service
-                reservations = reservationService.query(courtName);
-            }*/
+                reservations = reservationService.query(courtName).collectList().block();
+            }
             // Update model to include reservations
             model.addAttribute("reservations", reservations);
             // Return view as a string

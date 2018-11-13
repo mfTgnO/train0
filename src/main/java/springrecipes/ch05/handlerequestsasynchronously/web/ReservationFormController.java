@@ -27,10 +27,10 @@ public class ReservationFormController {
         this.reservationService = reservationService;
     }
 
-    /*@ModelAttribute("SportTypes")
+    @ModelAttribute("SportTypes")
     public List<SportType> populateSportTypes() {
-        return reservationService.getAllSportTypes();
-    }*/
+        return reservationService.getAllSportTypes().collectList().block();
+    }
 
     @GetMapping
     public String setupForm(@RequestParam(required = true, value = "username") String username, Model model) {
