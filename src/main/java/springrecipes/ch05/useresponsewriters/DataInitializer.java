@@ -23,7 +23,7 @@ public class DataInitializer {
         this.reservationService = reservationService;
     }
 
-    @PostConstruct
+    /*@PostConstruct
     public void init() {
         List<SportType> sportTypes = reservationService.getAllSportTypes();
         for (int i = 0; i < 100; i++) {
@@ -38,5 +38,5 @@ public class DataInitializer {
                 e.printStackTrace();
             }
         }
-    }
+    }*/
 }

@@ -37,10 +37,16 @@ public class ReservationQueryController {
             // Create reservation list
             List<Reservation> reservations = Collections.emptyList();
             // Make a query if parameter is not null
-            if (courtName != null) {
+            /*if (courtName != null) {
                 Delayer.randomDelay();// Simulate a slow service
                 reservations = reservationService.query(courtName);
-            }
-        }
+            }*/
+            // Update model to include reservations
+            model.addAttribute("reservations", reservations);
+            // Return view as a string
+            // Based on resolver configuration the reservationQuery view
+            // will be mapped to a JSP in /WEB-INF/jsp/reservationQuery.jsp
+            return "reservationQuery";
+        };
     }
 }
