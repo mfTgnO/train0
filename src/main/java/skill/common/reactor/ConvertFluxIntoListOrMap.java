@@ -60,7 +60,7 @@ public class ConvertFluxIntoListOrMap {
     private static void test4() {
         System.out.println("===========================================test Flux.collectMultimap");
         Map<String, Collection<String>> map = flux.collectMultimap(item -> {
-                    return item.split("_[0-9]+:]")[0];
+                    return item.split("_[0-9]+:")[0];
                 },
                 item -> {
                     return item.split(":")[1];
