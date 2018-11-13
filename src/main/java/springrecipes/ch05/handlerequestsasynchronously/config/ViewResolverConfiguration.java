@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
-@Configuration
+/*@Configuration
 public class ViewResolverConfiguration implements WebMvcConfigurer {
     @Bean
     public InternalResourceViewResolver internalResourceViewResolver() {
@@ -14,4 +14,4 @@ public class ViewResolverConfiguration implements WebMvcConfigurer {
         viewResolver.setSuffix(".jsp");
         return viewResolver;
     }
-}
+}*/

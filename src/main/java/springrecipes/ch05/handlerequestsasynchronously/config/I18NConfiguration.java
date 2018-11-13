@@ -11,6 +11,7 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 
 import java.util.Locale;
 
+/*
 @Configuration
 public class I18NConfiguration implements WebMvcConfigurer {
     @Override
@@ -41,3 +42,4 @@ public class I18NConfiguration implements WebMvcConfigurer {
         return messageSource;
     }
 }
+*/

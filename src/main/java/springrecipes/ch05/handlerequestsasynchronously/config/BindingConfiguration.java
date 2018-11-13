@@ -6,7 +6,7 @@ import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import springrecipes.domain.SportTypeConverter;
 
-@Configuration
+/*@Configuration
 public class BindingConfiguration implements WebMvcConfigurer {
     @Autowired
     private SportTypeConverter sportTypeConverter;
@@ -16,4 +16,4 @@ public class BindingConfiguration implements WebMvcConfigurer {
         System.out.println("Registring SportTypeConverter");
         registry.addConverter(sportTypeConverter);
     }
-}
+}*/

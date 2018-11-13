@@ -7,12 +7,12 @@ import springrecipes.ch05.ReservationNotAvailableException;
 @ControllerAdvice
 public class ExceptionHandlingAdvice {
     @ExceptionHandler(ReservationNotAvailableException.class)
-    public String handle() {
+    public String handle(ReservationNotAvailableException ex) {
         return "reservationNotAvailable";
     }
 
     @ExceptionHandler
-    public String handleDefault() {
+    public String handleDefault(Exception e) {
         return "error";
     }
 }

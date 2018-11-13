@@ -32,6 +32,7 @@ public class ReservationFormController {
         return reservationService.getAllSportTypes().collectList().block();
     }
 
+    // http://localhost:8080/reservationForm?username=abc
     @GetMapping
     public String setupForm(@RequestParam(required = true, value = "username") String username, Model model) {
         Reservation reservation = new Reservation();

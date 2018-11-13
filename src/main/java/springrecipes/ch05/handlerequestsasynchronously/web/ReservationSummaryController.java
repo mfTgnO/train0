@@ -1,22 +1,16 @@
 package springrecipes.ch05.handlerequestsasynchronously.web;
 
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import springrecipes.ch03.domain.Reservation;
 import springrecipes.ch05.handlerequestsasynchronously.service.ReservationService;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.ParseException;
-import java.time.LocalDate;
 import java.util.Date;
-import java.util.List;
 
 @Controller
 @RequestMapping("/reservationSummary*")
@@ -27,8 +21,8 @@ public class ReservationSummaryController {
         this.reservationService = reservationService;
     }
 
-    @RequestMapping(method = RequestMethod.GET)
-    /*public String generateSummary(@RequestParam(required = true, value = "date") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate selectedDate, Model model) {
+    /*@RequestMapping(method = RequestMethod.GET)
+    public String generateSummary(@RequestParam(required = true, value = "date") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate selectedDate, Model model) {
         List<Reservation> reservations = reservationService.findByDate(selectedDate);
         model.addAttribute("reservations", reservations);
         return "reservationSummary";
