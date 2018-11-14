@@ -2,7 +2,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <!--<bean id="banderLoader" class="springrecipes.ch02.propertiesfiledata_ii.BannerLoader"
+    <!--<bean id="banderLoader" class="spring_recipes_4th.ch02.propertiesfiledata_ii.BannerLoader"
           init-method="showBanner">
         <property name="banner">
             <value>classpath:banner.txt</value>

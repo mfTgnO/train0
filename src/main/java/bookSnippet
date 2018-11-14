@@ -1,153 +1,41 @@
-5-2. Use Response Writers
-Problem
-You have a service, or multiple calls, and want to send the response in chunks to the client.
-Solution
-Use a ResponseBodyEmitter (or its sibling SseEmitter) to send the response in chunks.
-How It Works
-Spring supports writing objects as plain objects using the HttpMessageConverter infrastructure, the result
-will be a chunked (or streaming) list to the client. Instead of objects you could also send them as events, so
-called Server-Sent Events.
-Send Multiple Results in a Response
-Spring MVC has class named ResponseBodyEmitter that is particularly useful if, instead of a single result
-(like a view name or ModelAndView), you want to return multiple objects to the client. When sending an
-object, the object is converted to a result using an HttpMessageConverter (see also recipe 4-2). To use the
-ResponseBodyEmitter, you have to return it from the request-handling method.
-Modify the find method of the ReservationQueryController to return a ResponseBodyEmitter and
-send the results one by one to the client.
-// FINAL
-package com.apress.springrecipes.court.web;
-import com.apress.springrecipes.court.Delayer;
-import com.apress.springrecipes.court.domain.Reservation;
-import com.apress.springrecipes.court.service.ReservationService;Chapter 5 ■ Spring MVC: aSynC proCeSSing
-218
-import org.springframework.core.task.TaskExecutor;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.Callable;
-@Controller
-@RequestMapping("/reservationQuery")
-public class ReservationQueryController {
-private final ReservationService reservationService;
-private final TaskExecutor taskExecutor;
-...
-@GetMapping(params = "courtName")
-public ResponseBodyEmitter find(@RequestParam("courtName") String courtName) {
-final ResponseBodyEmitter emitter = new ResponseBodyEmitter();
-taskExecutor.execute(() -> {
-Collection<Reservation> reservations = reservationService.query(courtName);
-try {
-for (Reservation reservation : reservations) {
-emitter.send(reservation);
-}
-emitter.complete();
-} catch (IOException e) {
-emitter.completeWithError(e);
-}
-});
-return emitter;
-}
-}
-First, a ResponseBodyEmitter is created and in the end returned from this method. Next, a task is
-executed that will query the reservations using the ReservationService.query method. All the results from
-that call are returned one by one using the send method of the ResponseBodyEmitter. When all the objects
-have been sent, the complete() method needs to be called so that the thread responsible for sending the
-response can complete the request and be freed up for the next response to handle. When an exception
-occurs and you want to inform the user of this, you call the completeWithError. The exception will pass
-through the normal exception handling of Spring MVC (see also recipe 3-8), and after that the response is
-completed.Chapter 5 ■ Spring MVC: aSynC proCeSSing
-219
-When using a tool like httpie or curl, calling the URL http://localhost:8080/court/
-reservationQuery courtName=='Tennis #1' will yield something like Figure 5-1. The result will be
-chunked and have a status of 200 (OK).
-If you want to change the status code or add custom headers, you could also wrap the
-ResponseBodyEmitter in a ResponseEntity, which would allow for the customization of the return code,
-headers, and so on (see recipe 4-1).
-@GetMapping(params = "courtName")
-public ResponseEntity<ResponseBodyEmitter> find(@RequestParam("courtName") String courtName)
-{
-final ResponseBodyEmitter emitter = new ResponseBodyEmitter();
-....
-return ResponseEntity.status(HttpStatus.I_AM_A_TEAPOT)
-.header("Custom-Header", "Custom-Value")
-.body(emitter);
-}
-Now the status code will be changed to 418, and it will contain a custom header (see Figure 5-2).
-Figure 5-1. Chunked result
-Figure 5-2. Modified chunked resultChapter 5 ■ Spring MVC: aSynC proCeSSing
-220
-Send Multiple Results as Events
-A sibling of the ResponseBodyEmitter is the SseEmitter, which can deliver events from the server to the
-client using server-sent events. Server-sent events are messages from the server side to the client, and they
-have a content type header of text/event-stream. They are quite lightweight and allow for four fields to be
-defined (see Table 5-2).
-To send events from a request-handling method, you need to create an instance of SseEmitter and
-return it from the request-handling method. Then you can use the send method to send individual elements
-to the client.
-@GetMapping(params = "courtName")
-public SseEmitter find(@RequestParam("courtName") String courtName) {
-final SseEmitter emitter = new SseEmitter();
-taskExecutor.execute(() -> {
-Collection<Reservation> reservations = reservationService.query(courtName);
-try {
-for (Reservation reservation : reservations) {
-Delayer.delay(125);
-emitter.send(reservation);
-}
-emitter.complete();
-} catch (IOException e) {
-emitter.completeWithError(e);
-}
-});
-return emitter;
-} ■
-Note here there is a delay in sending each item to the client, just so you can see the different events
-coming in. you wouldn’t do this in real code.
-Table 5-2. Allowed Fields for Server-Sent Events
-Field Description
-id The ID of the event
-event The type of event
-data The event data
-retry Reconnection time for the event streamChapter 5 ■ Spring MVC: aSynC proCeSSing
-221
-Now when using something like curl to call the URL http://localhost:8080/court/reservationQuery
-courtName=='Tennis #1', you will see events coming in one by one (Figure 5-3).
-Note that the Content-Type header has a value of text/event-stream to indicate that you get a stream
-of events. You could keep the stream open and keep receiving event notifications. You will also notice that
-each object written is converted to JSON; this is done with an HttpMessageConverter just like with a plain
-ResponseBodyEmitter. Each object is written in the data tag as the event data.
-If you want to add more information to the event (in other words, fill in one of the other fields
-mentioned in Table 5-2), you can use the SseEventBuilder. To get an instance of that, you can call the
-event() factory method on the SseEmitter. Let’s use it to fill in the id field with the hash code of the
-Reservation.
-@GetMapping(params = "courtName")
-public SseEmitter find(@RequestParam("courtName") String courtName) {
-final SseEmitter emitter = new SseEmitter();
-taskExecutor.execute(() -> {
-Collection<Reservation> reservations = reservationService.query(courtName);
-try {
-for (Reservation reservation : reservations) {
-Delayer.delay(120);
-emitter.send(emitter.event().id(String.valueOf(reservation.hashCode())).
-data(reservation));
-}
-emitter.complete();
-} catch (IOException e) {
-emitter.completeWithError(e);
-}
-});
-return emitter;
-}
-Figure 5-3. Result of server-sent eventsChapter 5 ■ Spring MVC: aSynC proCeSSing
-222
-Now when using something like curl to call the URL http://localhost:8080/court/reservationQuery
-courtName=='Tennis #1', you will see events coming in one by one, and they will contain both id and data
-fields.
+IF a colleague were to say to you, “Spouse of me this night today manufactures the
+unusual meal in a home. You will join?” three things would likely cross your mind:
+third, that you had been invited to dinner; second, that English was not your colleague’s first language; and first, a good deal of puzzlement.
+If you have ever studied a second language yourself and then tried to use it
+outside the classroom, you know that there are three things you must master: how
+the language is structured (grammar), how to name things you want to talk about
+(vocabulary), and the customary and effective ways to say everyday things
+(usage). Too often only the first two are covered in the classroom, and you find
+native speakers constantly suppressing their laughter as you try to make yourself
+understood.
+It is much the same with a programming language. You need to understand the
+core language: is it algorithmic, functional, object-oriented? You need to know the
+vocabulary: what data structures, operations, and facilities are provided by the
+standard libraries? And you need to be familiar with the customary and effective
+ways to structure your code. Books about programming languages often cover
+only the first two, or discuss usage only spottily. Maybe that’s because the first
+two are in some ways easier to write about. Grammar and vocabulary are properties of the language alone, but usage is characteristic of a community that uses it.
+The Java programming language, for example, is object-oriented with single
+inheritance and supports an imperative (statement-oriented) coding style within
+each method. The libraries address graphic display support, networking, distributed computing, and security. But how is the language best put to use in practice?
+There is another point. Programs, unlike spoken sentences and unlike most
+books and magazines, are likely to be changed over time. It’s typically not enough
+to produce code that operates effectively and is readily understood by other persons; one must also organize the code so that it is easy to modify. There may be
+ten ways to write code for some task T. Of those ten ways, seven will be awkward,
+inefficient, or puzzling. Of the other three, which is most likely to be similar to the
+code needed for the task T' in next year’s software release?xii FOREWORD
+There are numerous books from which you can learn the grammar of the Java
+programming language, including The Java™ Programming Language by Arnold,
+Gosling, and Holmes, or The Java™ Language Specification by Gosling, Joy, yours
+truly, and Bracha. Likewise, there are dozens of books on the libraries and APIs
+associated with the Java programming language.
+This book addresses your third need: customary and effective usage. Joshua
+Bloch has spent years extending, implementing, and using the Java programming
+language at Sun Microsystems; he has also read a lot of other people’s code,
+including mine. Here he offers good advice, systematically organized, on how to
+structure your code so that it works well, so that other people can understand it, so
+that future modifications and improvements are less likely to cause headaches—
+perhaps, even, so that your programs will be pleasant, elegant, and graceful.
+Guy L. Steele Jr.
+Burlington, Massachusetts
+April 2001
