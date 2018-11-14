@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch05.handlerequestsasynchronously.web;
 
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
@@ -20,3 +21,4 @@ public class CourtWepApplicationInitializer extends AbstractAnnotationConfigDisp
         return new String[]{"/"};
     }
 }
+*/

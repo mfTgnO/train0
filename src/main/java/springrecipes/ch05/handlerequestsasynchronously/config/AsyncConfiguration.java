@@ -1,3 +1,4 @@
+/*
 package springrecipes.ch05.handlerequestsasynchronously.config;
 
 import org.springframework.context.annotation.Bean;
@@ -24,3 +25,4 @@ public class AsyncConfiguration implements WebMvcConfigurer {
         return taskExecutor;
     }
 }
+*/
