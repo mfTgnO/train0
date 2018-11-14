@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import reactor.core.publisher.Flux;
 import springrecipes.ch03.domain.Reservation;
 import springrecipes.ch05.handlerequestsasynchronously.Delayer;
 import springrecipes.ch05.handlerequestsasynchronously.service.ReservationService;
@@ -30,6 +31,8 @@ public class ReservationQueryController {
     // Controller will always look for a default POST method irrespective of name
     // when a submission ocurrs on the URL (i.e.@RequestMapping(/reservationQuery))
     // In this case, named submitForm to ease identification
+
+    // http://localhost:8080/reservationQuery/?courtName=Tennis #1
     @PostMapping
     // Submission will come with courtName field, also add Model to return results
     public Callable<String> sumbitForm(@RequestParam("courtName") String courtName, Model model) {
@@ -39,7 +42,8 @@ public class ReservationQueryController {
             // Make a query if parameter is not null
             if (courtName != null) {
                 Delayer.randomDelay();// Simulate a slow service
-                reservations = reservationService.query(courtName).collectList().block();
+                Flux<Reservation> query = reservationService.query(courtName);
+                reservations = query.collectList().block();
             }
             // Update model to include reservations
             model.addAttribute("reservations", reservations);
