@@ -43,8 +43,7 @@
         <tr>
             <td>Sport Type</td>
             <td>
-                <form:select path="sportType" items="${sportTypes}"
-                             itemValue="id" itemLabel="name"/>
+                <form:select path="sportType" items="${sportTypes}" itemValue="id" itemLabel="name"/>
             </td>
             <td><form:errors path="sportType" cssClass="error"/></td>
         </tr>

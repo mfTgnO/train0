@@ -10,6 +10,7 @@ import java.util.Date;
 @Controller
 @RequestMapping("/welcome")
 public class WelcomeController {
+    // http://localhost:8080/welcome
     @RequestMapping(method = RequestMethod.GET)
     public String welcome(Model model) {
         Date today = new Date();
