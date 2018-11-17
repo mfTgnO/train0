@@ -1,159 +1,266 @@
-Creating and Destroying Objects
-THIS chapter concerns creating and destroying objects: when and how to create
-them, when and how to avoid creating them, how to ensure they are destroyed in a
-timely manner, and how to manage any cleanup actions that must precede their
-destruction.
-Item 1: Consider static factory methods instead of constructors
-The traditional way for a class to allow a client to obtain an instance is to provide
-a public constructor. There is another technique that should be a part of every
-programmer’s toolkit. A class can provide a public static factory method, which is
-simply a static method that returns an instance of the class. Here’s a simple
-example from Boolean (the boxed primitive class for boolean). This method
-translates a boolean primitive value into a Boolean object reference:
-public static Boolean valueOf(boolean b) {
-return b ? Boolean.TRUE : Boolean.FALSE;
+Item 2: Consider a builder when faced with many constructor
+parameters
+Static factories and constructors share a limitation: they do not scale well to large
+numbers of optional parameters. Consider the case of a class representing the
+Nutrition Facts label that appears on packaged foods. These labels have a few
+required fields—serving size, servings per container, and calories per serving—
+and more than twenty optional fields—total fat, saturated fat, trans fat, cholesterol,
+sodium, and so on. Most products have nonzero values for only a few of these
+optional fields.
+What sort of constructors or static factories should you write for such a class?
+Traditionally, programmers have used the telescoping constructor pattern, in
+which you provide a constructor with only the required parameters, another with a
+single optional parameter, a third with two optional parameters, and so on, culminating in a constructor with all the optional parameters. Here’s how it looks in
+practice. For brevity’s sake, only four optional fields are shown:
+// Telescoping constructor pattern - does not scale well!
+public class NutritionFacts {
+private final int servingSize; // (mL) required
+private final int servings; // (per container) required
+private final int calories; // (per serving) optional
+private final int fat; // (g/serving) optional
+private final int sodium; // (mg/serving) optional
+private final int carbohydrate; // (g/serving) optional
+public NutritionFacts(int servingSize, int servings) {
+this(servingSize, servings, 0);
 }
-Note that a static factory method is not the same as the Factory Method pattern
-from Design Patterns [Gamma95]. The static factory method described in this
-item has no direct equivalent in Design Patterns.
-A class can provide its clients with static factory methods instead of, or in
-addition to, public constructors. Providing a static factory method instead of a
-public constructor has both advantages and disadvantages.
-One advantage of static factory methods is that, unlike constructors, they
-have names. If the parameters to a constructor do not, in and of themselves,
-describe the object being returned, a static factory with a well-chosen name is
-easier to use and the resulting client code easier to read. For example, the6 CHAPTER 2 CREATING AND DESTROYING OBJECTS
-constructor BigInteger(int, int, Random), which returns a BigInteger that is
-probably prime, would have been better expressed as a static factory method
-named BigInteger.probablePrime. (This method was added in Java 4.)
-A class can have only a single constructor with a given signature. Programmers have been known to get around this restriction by providing two constructors
-whose parameter lists differ only in the order of their parameter types. This is a
-really bad idea. The user of such an API will never be able to remember which
-constructor is which and will end up calling the wrong one by mistake. People
-reading code that uses these constructors will not know what the code does
-without referring to the class documentation.
-Because they have names, static factory methods don’t share the restriction
-discussed in the previous paragraph. In cases where a class seems to require
-multiple constructors with the same signature, replace the constructors with static
-factory methods and carefully chosen names to highlight their differences.
-A second advantage of static factory methods is that, unlike constructors,
-they are not required to create a new object each time they’re invoked. This
-allows immutable classes (Item 17) to use preconstructed instances, or to cache
-instances as they’re constructed, and dispense them repeatedly to avoid creating
-unnecessary duplicate objects. The Boolean.valueOf(boolean) method illustrates this technique: it never creates an object. This technique is similar to the
-Flyweight pattern [Gamma95]. It can greatly improve performance if equivalent
-objects are requested often, especially if they are expensive to create.
-The ability of static factory methods to return the same object from repeated
-invocations allows classes to maintain strict control over what instances exist at
-any time. Classes that do this are said to be instance-controlled. There are several
-reasons to write instance-controlled classes. Instance control allows a class to guarantee that it is a singleton (Item 3) or noninstantiable (Item 4). Also, it allows an
-immutable value class (Item 17) to make the guarantee that no two equal instances
-exist: a.equals(b) if and only if a == b. This is the basis of the Flyweight pattern
-[Gamma95]. Enum types (Item 34) provide this guarantee.
-A third advantage of static factory methods is that, unlike constructors,
-they can return an object of any subtype of their return type. This gives you
-great flexibility in choosing the class of the returned object.
-One application of this flexibility is that an API can return objects without
-making their classes public. Hiding implementation classes in this fashion leads to
-a very compact API. This technique lends itself to interface-based frameworks
-(Item 20), where interfaces provide natural return types for static factory methods.
-www.ebook3000.comITEM 1: CONSIDER STATIC FACTORY METHODS INSTEAD OF CONSTRUCTORS 7
-Prior to Java 8, interfaces couldn’t have static methods. By convention, static
-factory methods for an interface named Type were put in a noninstantiable companion class (Item 4) named Types. For example, the Java Collections Framework
-has forty-five utility implementations of its interfaces, providing unmodifiable
-collections, synchronized collections, and the like. Nearly all of these implementations are exported via static factory methods in one noninstantiable class
-(java.util.Collections). The classes of the returned objects are all nonpublic.
-The Collections Framework API is much smaller than it would have been had
-it exported forty-five separate public classes, one for each convenience implementation. It is not just the bulk of the API that is reduced but the conceptual weight:
-the number and difficulty of the concepts that programmers must master in order
-to use the API. The programmer knows that the returned object has precisely the
-API specified by its interface, so there is no need to read additional class documentation for the implementation class. Furthermore, using such a static factory
-method requires the client to refer to the returned object by interface rather than
-implementation class, which is generally good practice (Item 64).
-As of Java 8, the restriction that interfaces cannot contain static methods was
-eliminated, so there is typically little reason to provide a noninstantiable companion class for an interface. Many public static members that would have been at
-home in such a class should instead be put in the interface itself. Note, however,
-that it may still be necessary to put the bulk of the implementation code behind
-these static methods in a separate package-private class. This is because Java 8
-requires all static members of an interface to be public. Java 9 allows private static
-methods, but static fields and static member classes are still required to be public.
-A fourth advantage of static factories is that the class of the returned
-object can vary from call to call as a function of the input parameters. Any subtype of the declared return type is permissible. The class of the returned object can
-also vary from release to release.
-The EnumSet class (Item 36) has no public constructors, only static factories.
-In the OpenJDK implementation, they return an instance of one of two subclasses,
-depending on the size of the underlying enum type: if it has sixty-four or fewer
-elements, as most enum types do, the static factories return a RegularEnumSet
-instance, which is backed by a single long; if the enum type has sixty-five or more
-elements, the factories return a JumboEnumSet instance, backed by a long array.
-The existence of these two implementation classes is invisible to clients. If
-RegularEnumSet ceased to offer performance advantages for small enum types, it
-could be eliminated from a future release with no ill effects. Similarly, a future
-release could add a third or fourth implementation of EnumSet if it proved beneficial8 CHAPTER 2 CREATING AND DESTROYING OBJECTS
-for performance. Clients neither know nor care about the class of the object they get
-back from the factory; they care only that it is some subclass of EnumSet.
-A fifth advantage of static factories is that the class of the returned object
-need not exist when the class containing the method is written. Such flexible
-static factory methods form the basis of service provider frameworks, like the Java
-Database Connectivity API (JDBC). A service provider framework is a system in
-which providers implement a service, and the system makes the implementations
-available to clients, decoupling the clients from the implementations.
-There are three essential components in a service provider framework: a
-service interface, which represents an implementation; a provider registration
-API, which providers use to register implementations; and a service access API,
-which clients use to obtain instances of the service. The service access API may
-allow clients to specify criteria for choosing an implementation. In the absence of
-such criteria, the API returns an instance of a default implementation, or allows
-the client to cycle through all available implementations. The service access API
-is the flexible static factory that forms the basis of the service provider framework.
-An optional fourth component of a service provider framework is a service
-provider interface, which describes a factory object that produce instances of the
-service interface. In the absence of a service provider interface, implementations
-must be instantiated reflectively (Item 65). In the case of JDBC, Connection
-plays the part of the service interface, DriverManager.registerDriver is the
-provider registration API, DriverManager.getConnection is the service access
-API, and Driver is the service provider interface.
-There are many variants of the service provider framework pattern. For example, the service access API can return a richer service interface to clients than the
-one furnished by providers. This is the Bridge pattern [Gamma95]. Dependency
-injection frameworks (Item 5) can be viewed as powerful service providers. Since
-Java 6, the platform includes a general-purpose service provider framework,
-java.util.ServiceLoader, so you needn’t, and generally shouldn’t, write your
-own (Item 59). JDBC doesn’t use ServiceLoader, as the former predates the latter.
-The main limitation of providing only static factory methods is that
-classes without public or protected constructors cannot be subclassed. For
-example, it is impossible to subclass any of the convenience implementation
-classes in the Collections Framework. Arguably this can be a blessing in disguise
-because it encourages programmers to use composition instead of inheritance
-(Item 18), and is required for immutable types (Item 17).
-A second shortcoming of static factory methods is that they are hard for
-programmers to find. They do not stand out in API documentation in the way
-www.ebook3000.comITEM 1: CONSIDER STATIC FACTORY METHODS INSTEAD OF CONSTRUCTORS 9
-that constructors do, so it can be difficult to figure out how to instantiate a class
-that provides static factory methods instead of constructors. The Javadoc tool may
-someday draw attention to static factory methods. In the meantime, you can
-reduce this problem by drawing attention to static factories in class or interface
-documentation and by adhering to common naming conventions. Here are some
-common names for static factory methods. This list is far from exhaustive:
-• from—A type-conversion method that takes a single parameter and returns a
-corresponding instance of this type, for example:
-Date d = Date.from(instant);
-• of—An aggregation method that takes multiple parameters and returns an instance of this type that incorporates them, for example:
-Set<Rank> faceCards = EnumSet.of(JACK, QUEEN, KING);
-• valueOf—A more verbose alternative to from and of, for example:
-BigInteger prime = BigInteger.valueOf(Integer.MAX_VALUE);
-• instance or getInstance—Returns an instance that is described by its parameters (if any) but cannot be said to have the same value, for example:
-StackWalker luke = StackWalker.getInstance(options);
-• create or newInstance—Like instance or getInstance, except that the
-method guarantees that each call returns a new instance, for example:
-Object newArray = Array.newInstance(classObject, arrayLen);
-• getType—Like getInstance, but used if the factory method is in a different
-class. Type is the type of object returned by the factory method, for example:
-FileStore fs = Files.getFileStore(path);
-• newType—Like newInstance, but used if the factory method is in a different
-class. Type is the type of object returned by the factory method, for example:
-BufferedReader br = Files.newBufferedReader(path);
-• type—A concise alternative to getType and newType, for example:
-List<Complaint> litany = Collections.list(legacyLitany);
-In summary, static factory methods and public constructors both have their
-uses, and it pays to understand their relative merits. Often static factories are
-preferable, so avoid the reflex to provide public constructors without first considering static factories.
+public NutritionFacts(int servingSize, int servings,
+int calories) {
+this(servingSize, servings, calories, 0);
+}
+public NutritionFacts(int servingSize, int servings,
+int calories, int fat) {
+this(servingSize, servings, calories, fat, 0);
+}
+public NutritionFacts(int servingSize, int servings,
+int calories, int fat, int sodium) {
+this(servingSize, servings, calories, fat, sodium, 0);
+}
+www.ebook3000.comITEM 2: CONSIDER A BUILDER WHEN FACED WITH MANY CONSTRUCTOR PARAMETERS 11
+public NutritionFacts(int servingSize, int servings,
+int calories, int fat, int sodium, int carbohydrate) {
+this.servingSize = servingSize;
+this.servings = servings;
+this.calories = calories;
+this.fat = fat;
+this.sodium = sodium;
+this.carbohydrate = carbohydrate;
+}
+}
+When you want to create an instance, you use the constructor with the shortest
+parameter list containing all the parameters you want to set:
+NutritionFacts cocaCola =
+new NutritionFacts(240, 8, 100, 0, 35, 27);
+Typically this constructor invocation will require many parameters that you don’t
+want to set, but you’re forced to pass a value for them anyway. In this case, we
+passed a value of 0 for fat. With “only” six parameters this may not seem so bad,
+but it quickly gets out of hand as the number of parameters increases.
+In short, the telescoping constructor pattern works, but it is hard to write
+client code when there are many parameters, and harder still to read it. The
+reader is left wondering what all those values mean and must carefully count
+parameters to find out. Long sequences of identically typed parameters can cause
+subtle bugs. If the client accidentally reverses two such parameters, the compiler
+won’t complain, but the program will misbehave at runtime (Item 51).
+A second alternative when you’re faced with many optional parameters in a
+constructor is the JavaBeans pattern, in which you call a parameterless constructor to create the object and then call setter methods to set each required parameter
+66666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666665 a nd each optional parameter of interest:
+// JavaBeans Pattern - allows inconsistency, mandates mutability
+public class NutritionFacts {
+// Parameters initialized to default values (if any)
+private int servingSize = -1; // Required; no default value
+private int servings = -1; // Required; no default value
+private int calories = 0;
+private int fat = 0;
+private int sodium = 0;
+private int carbohydrate = 0;
+public NutritionFacts() { }12 CHAPTER 2 CREATING AND DESTROYING OBJECTS
+// Setters
+public void setServingSize(int val) { servingSize = val; }
+public void setServings(int val) { servings = val; }
+public void setCalories(int val) { calories = val; }
+public void setFat(int val) { fat = val; }
+public void setSodium(int val) { sodium = val; }
+public void setCarbohydrate(int val) { carbohydrate = val; }
+}
+This pattern has none of the disadvantages of the telescoping constructor pattern.
+It is easy, if a bit wordy, to create instances, and easy to read the resulting code:
+NutritionFacts cocaCola = new NutritionFacts();
+cocaCola.setServingSize(240);
+cocaCola.setServings(8);
+cocaCola.setCalories(100);
+cocaCola.setSodium(35);
+cocaCola.setCarbohydrate(27);
+Unfortunately, the JavaBeans pattern has serious disadvantages of its own.
+Because construction is split across multiple calls, a JavaBean may be in an
+inconsistent state partway through its construction. The class does not have
+the option of enforcing consistency merely by checking the validity of the
+constructor parameters. Attempting to use an object when it’s in an inconsistent
+state may cause failures that are far removed from the code containing the bug and
+hence difficult to debug. A related disadvantage is that the JavaBeans pattern
+precludes the possibility of making a class immutable (Item 17) and requires
+added effort on the part of the programmer to ensure thread safety.
+It is possible to reduce these disadvantages by manually “freezing” the object
+when its construction is complete and not allowing it to be used until frozen, but
+this variant is unwieldy and rarely used in practice. Moreover, it can cause errors
+at runtime because the compiler cannot ensure that the programmer calls the
+freeze method on an object before using it.
+Luckily, there is a third alternative that combines the safety of the telescoping
+constructor pattern with the readability of the JavaBeans pattern. It is a form of the
+Builder pattern [Gamma95]. Instead of making the desired object directly, the
+client calls a constructor (or static factory) with all of the required parameters and
+gets a builder object. Then the client calls setter-like methods on the builder object
+to set each optional parameter of interest. Finally, the client calls a parameterless
+build method to generate the object, which is typically immutable. The builder is
+typically a static member class (Item 24) of the class it builds. Here’s how it looks
+in practice:
+www.ebook3000.comITEM 2: CONSIDER A BUILDER WHEN FACED WITH MANY CONSTRUCTOR PARAMETERS 13
+// Builder Pattern
+public class NutritionFacts {
+private final int servingSize;
+private final int servings;
+private final int calories;
+private final int fat;
+private final int sodium;
+private final int carbohydrate;
+public static class Builder {
+// Required parameters
+private final int servingSize;
+private final int servings;
+// Optional parameters - initialized to default values
+private int calories = 0;
+private int fat = 0;
+private int sodium = 0;
+private int carbohydrate = 0;
+public Builder(int servingSize, int servings) {
+this.servingSize = servingSize;
+this.servings = servings;
+}
+public Builder calories(int val)
+{ calories = val; return this; }
+public Builder fat(int val)
+{ fat = val; return this; }
+public Builder sodium(int val)
+{ sodium = val; return this; }
+public Builder carbohydrate(int val)
+{ carbohydrate = val; return this; }
+public NutritionFacts build() {
+return new NutritionFacts(this);
+}
+}
+private NutritionFacts(Builder builder) {
+servingSize = builder.servingSize;
+servings = builder.servings;
+calories = builder.calories;
+fat = builder.fat;
+sodium = builder.sodium;
+carbohydrate = builder.carbohydrate;
+}
+}14 CHAPTER 2 CREATING AND DESTROYING OBJECTS
+The NutritionFacts class is immutable, and all parameter default values are
+in one place. The builder’s setter methods return the builder itself so that invocations can be chained, resulting in a fluent API. Here’s how the client code looks:
+NutritionFacts cocaCola = new NutritionFacts.Builder(240, 8)
+.calories(100).sodium(35).carbohydrate(27).build();
+This client code is easy to write and, more importantly, easy to read. The Builder
+pattern simulates named optional parameters as found in Python and Scala.
+Validity checks were omitted for brevity. To detect invalid parameters as soon
+as possible, check parameter validity in the builder’s constructor and methods.
+Check invariants involving multiple parameters in the constructor invoked by the
+build method. To ensure these invariants against attack, do the checks on object
+fields after copying parameters from the builder (Item 50). If a check fails, throw
+an IllegalArgumentException (Item 72) whose detail message indicates which
+parameters are invalid (Item 75).
+The Builder pattern is well suited to class hierarchies. Use a parallel hierarchy of builders, each nested in the corresponding class. Abstract classes have
+abstract builders; concrete classes have concrete builders. For example, consider
+an abstract class at the root of a hierarchy representing various kinds of pizza:
+// Builder pattern for class hierarchies
+public abstract class Pizza {
+public enum Topping { HAM, MUSHROOM, ONION, PEPPER, SAUSAGE }
+final Set<Topping> toppings;
+abstract static class Builder<T extends Builder<T>> {
+EnumSet<Topping> toppings = EnumSet.noneOf(Topping.class);
+public T addTopping(Topping topping) {
+toppings.add(Objects.requireNonNull(topping));
+return self();
+}
+abstract Pizza build();
+// Subclasses must override this method to return "this"
+protected abstract T self();
+}
+Pizza(Builder<?> builder) {
+toppings = builder.toppings.clone(); // See Item 50
+}
+}
+Note that Pizza.Builder is a generic type with a recursive type parameter
+(Item 30). This, along with the abstract self method, allows method chaining to
+work properly in subclasses, without the need for casts. This workaround for the
+fact that Java lacks a self type is known as the simulated self-type idiom.
+www.ebook3000.comITEM 2: CONSIDER A BUILDER WHEN FACED WITH MANY CONSTRUCTOR PARAMETERS 15
+Here are two concrete subclasses of Pizza, one of which represents a standard
+New-York-style pizza, the other a calzone. The former has a required size parameter, while the latter lets you specify whether sauce should be inside or out:
+public class NyPizza extends Pizza {
+public enum Size { SMALL, MEDIUM, LARGE }
+private final Size size;
+public static class Builder extends Pizza.Builder<Builder> {
+private final Size size;
+public Builder(Size size) {
+this.size = Objects.requireNonNull(size);
+}
+@Override public NyPizza build() {
+return new NyPizza(this);
+}
+@Override protected Builder self() { return this; }
+}
+private NyPizza(Builder builder) {
+super(builder);
+size = builder.size;
+}
+}
+public class Calzone extends Pizza {
+private final boolean sauceInside;
+public static class Builder extends Pizza.Builder<Builder> {
+private boolean sauceInside = false; // Default
+public Builder sauceInside() {
+sauceInside = true;
+return this;
+}
+@Override public Calzone build() {
+return new Calzone(this);
+}
+@Override protected Builder self() { return this; }
+}
+private Calzone(Builder builder) {
+super(builder);
+sauceInside = builder.sauceInside;
+}
+}16 CHAPTER 2 CREATING AND DESTROYING OBJECTS
+Note that the build method in each subclass’s builder is declared to return the
+correct subclass: the build method of NyPizza.Builder returns NyPizza, while
+the one in Calzone.Builder returns Calzone. This technique, wherein a subclass
+method is declared to return a subtype of the return type declared in the superclass, is known as covariant return typing. It allows clients to use these builders
+without the need for casting.
+The client code for these “hierarchical builders” is essentially identical to the
+code for the simple NutritionFacts builder. The example client code shown next
+assumes static imports on enum constants for brevity:
+NyPizza pizza = new NyPizza.Builder(SMALL)
+.addTopping(SAUSAGE).addTopping(ONION).build();
+Calzone calzone = new Calzone.Builder()
+.addTopping(HAM).sauceInside().build();
+A minor advantage of builders over constructors is that builders can have multiple varargs parameters because each parameter is specified in its own method.
+Alternatively, builders can aggregate the parameters passed into multiple calls to a
+method into a single field, as demonstrated in the addTopping method earlier.
+The Builder pattern is quite flexible. A single builder can be used repeatedly
+to build multiple objects. The parameters of the builder can be tweaked between
+invocations of the build method to vary the objects that are created. A builder can
+fill in some fields automatically upon object creation, such as a serial number that
+increases each time an object is created.
+The Builder pattern has disadvantages as well. In order to create an object, you
+must first create its builder. While the cost of creating this builder is unlikely to be
+noticeable in practice, it could be a problem in performance-critical situations.
+Also, the Builder pattern is more verbose than the telescoping constructor pattern,
+so it should be used only if there are enough parameters to make it worthwhile, say
+four or more. But keep in mind that you may want to add more parameters in the
+future. But if you start out with constructors or static factories and switch to a
+builder when the class evolves to the point where the number of parameters gets
+out of hand, the obsolete constructors or static factories will stick out like a sore
+thumb. Therefore, it’s often better to start with a builder in the first place.
+In summary, the Builder pattern is a good choice when designing classes
+whose constructors or static factories would hav
