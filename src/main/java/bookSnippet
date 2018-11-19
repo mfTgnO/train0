@@ -10,7 +10,8 @@ optional fields.
 What sort of constructors or static factories should you write for such a class?
 Traditionally, programmers have used the telescoping constructor pattern, in
 which you provide a constructor with only the required parameters, another with a
-single optional parameter, a third with two optional parameters, and so on, culminating in a constructor with all the optional parameters. Here’s how it looks in
+single optional parameter, a third with two optional parameters, and so on, culminating in a constructor with all the optional parameters.
+Here’s how it looks in
 practice. For brevity’s sake, only four optional fields are shown:
 // Telescoping constructor pattern - does not scale well!
 public class NutritionFacts {
@@ -61,8 +62,9 @@ parameters to find out. Long sequences of identically typed parameters can cause
 subtle bugs. If the client accidentally reverses two such parameters, the compiler
 won’t complain, but the program will misbehave at runtime (Item 51).
 A second alternative when you’re faced with many optional parameters in a
-constructor is the JavaBeans pattern, in which you call a parameterless constructor to create the object and then call setter methods to set each required parameter
-66666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666665 a nd each optional parameter of interest:
+constructor is the JavaBeans pattern, in which you call a parameterless constructor to create the object and then call setter methods to
+set each required parameter
+and each optional parameter of interest:
 // JavaBeans Pattern - allows inconsistency, mandates mutability
 public class NutritionFacts {
 // Parameters initialized to default values (if any)
@@ -156,7 +158,8 @@ carbohydrate = builder.carbohydrate;
 }
 }14 CHAPTER 2 CREATING AND DESTROYING OBJECTS
 The NutritionFacts class is immutable, and all parameter default values are
-in one place. The builder’s setter methods return the builder itself so that invocations can be chained, resulting in a fluent API. Here’s how the client code looks:
+in one place. The builder’s setter methods return the builder itself so that invocations can be chained, resulting in a
+fluent API. Here’s how the client code looks:
 NutritionFacts cocaCola = new NutritionFacts.Builder(240, 8)
 .calories(100).sodium(35).carbohydrate(27).build();
 This client code is easy to write and, more importantly, easy to read. The Builder
@@ -195,7 +198,8 @@ work properly in subclasses, without the need for casts. This workaround for the
 fact that Java lacks a self type is known as the simulated self-type idiom.
 www.ebook3000.comITEM 2: CONSIDER A BUILDER WHEN FACED WITH MANY CONSTRUCTOR PARAMETERS 15
 Here are two concrete subclasses of Pizza, one of which represents a standard
-New-York-style pizza, the other a calzone. The former has a required size parameter, while the latter lets you specify whether sauce should be inside or out:
+New-York-style pizza, the other a calzone. The former has a required size parameter, while the latter lets you specify whether sauce should be inside
+or out:
 public class NyPizza extends Pizza {
 public enum Size { SMALL, MEDIUM, LARGE }
 private final Size size;
@@ -235,7 +239,8 @@ sauceInside = builder.sauceInside;
 Note that the build method in each subclass’s builder is declared to return the
 correct subclass: the build method of NyPizza.Builder returns NyPizza, while
 the one in Calzone.Builder returns Calzone. This technique, wherein a subclass
-method is declared to return a subtype of the return type declared in the superclass, is known as covariant return typing. It allows clients to use these builders
+method is declared to return a subtype of the return type declared in the superclass, is known as covariant return typing.
+It allows clients to use these builders
 without the need for casting.
 The client code for these “hierarchical builders” is essentially identical to the
 code for the simple NutritionFacts builder. The example client code shown next
@@ -252,6 +257,7 @@ to build multiple objects. The parameters of the builder can be tweaked between
 invocations of the build method to vary the objects that are created. A builder can
 fill in some fields automatically upon object creation, such as a serial number that
 increases each time an object is created.
+
 The Builder pattern has disadvantages as well. In order to create an object, you
 must first create its builder. While the cost of creating this builder is unlikely to be
 noticeable in practice, it could be a problem in performance-critical situations.
@@ -263,4 +269,7 @@ builder when the class evolves to the point where the number of parameters gets
 out of hand, the obsolete constructors or static factories will stick out like a sore
 thumb. Therefore, it’s often better to start with a builder in the first place.
 In summary, the Builder pattern is a good choice when designing classes
-whose constructors or static factories would hav
+whose constructors or static factories would have more than a handful of
+parameters, especially if many of the parameters are optional or of identical type.
+Client code is much easier to read and write with builders than with telescoping
+constructors, and builders are much safer than JavaBeans.
