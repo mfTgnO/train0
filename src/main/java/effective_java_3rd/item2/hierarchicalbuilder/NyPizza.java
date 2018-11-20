@@ -1,4 +1,4 @@
-package effective_java_3rd.ch02.hierarchicalbuilder;
+package effective_java_3rd.item2.hierarchicalbuilder;
 
 import java.util.Objects;
 

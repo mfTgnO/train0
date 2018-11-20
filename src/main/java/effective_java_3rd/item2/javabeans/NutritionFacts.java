@@ -1,4 +1,4 @@
-package effective_java_3rd.ch02.javabeans;
+package effective_java_3rd.item2.javabeans;
 
 // JavaBeans Pattern - allows inconsistency, mandates mutability  (pages 11-12)
 public class NutritionFacts {

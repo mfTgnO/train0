@@ -1,4 +1,4 @@
-package effective_java_3rd.ch02.hierarchicalbuilder;
+package effective_java_3rd.item2.hierarchicalbuilder;
 
 // Using the hierarchical builder (Page 16)
 public class PizzaTest {

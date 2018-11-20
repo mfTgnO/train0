@@ -1,275 +1,117 @@
-Item 2: Consider a builder when faced with many constructor
-parameters
-Static factories and constructors share a limitation: they do not scale well to large
-numbers of optional parameters. Consider the case of a class representing the
-Nutrition Facts label that appears on packaged foods. These labels have a few
-required fields—serving size, servings per container, and calories per serving—
-and more than twenty optional fields—total fat, saturated fat, trans fat, cholesterol,
-sodium, and so on. Most products have nonzero values for only a few of these
-optional fields.
-What sort of constructors or static factories should you write for such a class?
-Traditionally, programmers have used the telescoping constructor pattern, in
-which you provide a constructor with only the required parameters, another with a
-single optional parameter, a third with two optional parameters, and so on, culminating in a constructor with all the optional parameters.
-Here’s how it looks in
-practice. For brevity’s sake, only four optional fields are shown:
-// Telescoping constructor pattern - does not scale well!
-public class NutritionFacts {
-private final int servingSize; // (mL) required
-private final int servings; // (per container) required
-private final int calories; // (per serving) optional
-private final int fat; // (g/serving) optional
-private final int sodium; // (mg/serving) optional
-private final int carbohydrate; // (g/serving) optional
-public NutritionFacts(int servingSize, int servings) {
-this(servingSize, servings, 0);
+Item 6: Avoid creating unnecessary objects
+It is often appropriate to reuse a single object instead of creating a new functionally equivalent object each time it is needed.
+Reuse can be both faster and more
+stylish. An object can always be reused if it is immutable (Item 17).
+As an extreme example of what not to do, consider this statement:
+String s = new String("bikini"); // DON'T DO THIS!
+The statement creates a new String instance each time it is executed, and none
+of those object creations is necessary. The argument to the String constructor
+("bikini") is itself a String instance, functionally identical to all of the objects
+created by the constructor. If this usage occurs in a loop or in a frequently invoked
+method, millions of String instances can be created needlessly.
+The improved version is simply the following:
+String s = "bikini";
+This version uses a single String instance, rather than creating a new one
+each time it is executed. Furthermore, it is guaranteed that the object will be
+reused by any other code running in the same virtual machine that happens to
+contain the same string literal [JLS, 3.10.5].
+You can often avoid creating unnecessary objects by using static factory methods (Item 1) in preference to constructors on immutable classes that provide both.
+For example, the factory method Boolean.valueOf(String) is preferable to the
+constructor Boolean(String), which was deprecated in Java 9. The constructor
+must create a new object each time it’s called, while the factory method is never
+required to do so and won’t in practice. In addition to reusing immutable objects,
+you can also reuse mutable objects if you know they won’t be modified.
+Some object creations are much more expensive than others. If you’re going
+to need such an “expensive object” repeatedly, it may be advisable to cache it for
+reuse. Unfortunately, it’s not always obvious when you’re creating such an object.
+Suppose you want to write a method to determine whether a string is a valid
+Roman numeral. Here’s the easiest way to do this using a regular expression:
+// Performance can be greatly improved!
+static boolean isRomanNumeral(String s) {
+return s.matches("^(?=.)M*(C[MD]|D?C{0,3})"
++ "(X[CL]|L?X{0,3})(I[XV]|V?I{0,3})$");
 }
-public NutritionFacts(int servingSize, int servings,
-int calories) {
-this(servingSize, servings, calories, 0);
-}
-public NutritionFacts(int servingSize, int servings,
-int calories, int fat) {
-this(servingSize, servings, calories, fat, 0);
-}
-public NutritionFacts(int servingSize, int servings,
-int calories, int fat, int sodium) {
-this(servingSize, servings, calories, fat, sodium, 0);
-}
-www.ebook3000.comITEM 2: CONSIDER A BUILDER WHEN FACED WITH MANY CONSTRUCTOR PARAMETERS 11
-public NutritionFacts(int servingSize, int servings,
-int calories, int fat, int sodium, int carbohydrate) {
-this.servingSize = servingSize;
-this.servings = servings;
-this.calories = calories;
-this.fat = fat;
-this.sodium = sodium;
-this.carbohydrate = carbohydrate;
-}
-}
-When you want to create an instance, you use the constructor with the shortest
-parameter list containing all the parameters you want to set:
-NutritionFacts cocaCola =
-new NutritionFacts(240, 8, 100, 0, 35, 27);
-Typically this constructor invocation will require many parameters that you don’t
-want to set, but you’re forced to pass a value for them anyway. In this case, we
-passed a value of 0 for fat. With “only” six parameters this may not seem so bad,
-but it quickly gets out of hand as the number of parameters increases.
-In short, the telescoping constructor pattern works, but it is hard to write
-client code when there are many parameters, and harder still to read it. The
-reader is left wondering what all those values mean and must carefully count
-parameters to find out. Long sequences of identically typed parameters can cause
-subtle bugs. If the client accidentally reverses two such parameters, the compiler
-won’t complain, but the program will misbehave at runtime (Item 51).
-A second alternative when you’re faced with many optional parameters in a
-constructor is the JavaBeans pattern, in which you call a parameterless constructor to create the object and then call setter methods to
-set each required parameter
-and each optional parameter of interest:
-// JavaBeans Pattern - allows inconsistency, mandates mutability
-public class NutritionFacts {
-// Parameters initialized to default values (if any)
-private int servingSize = -1; // Required; no default value
-private int servings = -1; // Required; no default value
-private int calories = 0;
-private int fat = 0;
-private int sodium = 0;
-private int carbohydrate = 0;
-public NutritionFacts() { }12 CHAPTER 2 CREATING AND DESTROYING OBJECTS
-// Setters
-public void setServingSize(int val) { servingSize = val; }
-public void setServings(int val) { servings = val; }
-public void setCalories(int val) { calories = val; }
-public void setFat(int val) { fat = val; }
-public void setSodium(int val) { sodium = val; }
-public void setCarbohydrate(int val) { carbohydrate = val; }
-}
-This pattern has none of the disadvantages of the telescoping constructor pattern.
-It is easy, if a bit wordy, to create instances, and easy to read the resulting code:
-NutritionFacts cocaCola = new NutritionFacts();
-cocaCola.setServingSize(240);
-cocaCola.setServings(8);
-cocaCola.setCalories(100);
-cocaCola.setSodium(35);
-cocaCola.setCarbohydrate(27);
-Unfortunately, the JavaBeans pattern has serious disadvantages of its own.
-Because construction is split across multiple calls, a JavaBean may be in an
-inconsistent state partway through its construction. The class does not have
-the option of enforcing consistency merely by checking the validity of the
-constructor parameters. Attempting to use an object when it’s in an inconsistent
-state may cause failures that are far removed from the code containing the bug and
-hence difficult to debug. A related disadvantage is that the JavaBeans pattern
-precludes the possibility of making a class immutable (Item 17) and requires
-added effort on the part of the programmer to ensure thread safety.
-It is possible to reduce these disadvantages by manually “freezing” the object
-when its construction is complete and not allowing it to be used until frozen, but
-this variant is unwieldy and rarely used in practice. Moreover, it can cause errors
-at runtime because the compiler cannot ensure that the programmer calls the
-freeze method on an object before using it.
-Luckily, there is a third alternative that combines the safety of the telescoping
-constructor pattern with the readability of the JavaBeans pattern. It is a form of the
-Builder pattern [Gamma95]. Instead of making the desired object directly, the
-client calls a constructor (or static factory) with all of the required parameters and
-gets a builder object. Then the client calls setter-like methods on the builder object
-to set each optional parameter of interest. Finally, the client calls a parameterless
-build method to generate the object, which is typically immutable. The builder is
-typically a static member class (Item 24) of the class it builds. Here’s how it looks
-in practice:
-www.ebook3000.comITEM 2: CONSIDER A BUILDER WHEN FACED WITH MANY CONSTRUCTOR PARAMETERS 13
-// Builder Pattern
-public class NutritionFacts {
-private final int servingSize;
-private final int servings;
-private final int calories;
-private final int fat;
-private final int sodium;
-private final int carbohydrate;
-public static class Builder {
-// Required parameters
-private final int servingSize;
-private final int servings;
-// Optional parameters - initialized to default values
-private int calories = 0;
-private int fat = 0;
-private int sodium = 0;
-private int carbohydrate = 0;
-public Builder(int servingSize, int servings) {
-this.servingSize = servingSize;
-this.servings = servings;
-}
-public Builder calories(int val)
-{ calories = val; return this; }
-public Builder fat(int val)
-{ fat = val; return this; }
-public Builder sodium(int val)
-{ sodium = val; return this; }
-public Builder carbohydrate(int val)
-{ carbohydrate = val; return this; }
-public NutritionFacts build() {
-return new NutritionFacts(this);
+www.ebook3000.comITEM 6: AVOID CREATING UNNECESSARY OBJECTS 23
+The problem with this implementation is that it relies on the String.matches
+method. While String.matches is the easiest way to check if a string matches
+a regular expression, it’s not suitable for repeated use in performance-critical
+situations. The problem is that it internally creates a Pattern instance for the
+regular expression and uses it only once, after which it becomes eligible for
+garbage collection. Creating a Pattern instance is expensive because it requires
+compiling the regular expression into a finite state machine.
+To improve the performance, explicitly compile the regular expression into a
+Pattern instance (which is immutable) as part of class initialization, cache it, and
+reuse the same instance for every invocation of the isRomanNumeral method:
+// Reusing expensive object for improved performance
+public class RomanNumerals {
+private static final Pattern ROMAN = Pattern.compile(
+"^(?=.)M*(C[MD]|D?C{0,3})"
++ "(X[CL]|L?X{0,3})(I[XV]|V?I{0,3})$");
+static boolean isRomanNumeral(String s) {
+return ROMAN.matcher(s).matches();
 }
 }
-private NutritionFacts(Builder builder) {
-servingSize = builder.servingSize;
-servings = builder.servings;
-calories = builder.calories;
-fat = builder.fat;
-sodium = builder.sodium;
-carbohydrate = builder.carbohydrate;
+The improved version of isRomanNumeral provides significant performance
+gains if invoked frequently. On my machine, the original version takes 1.1 µs on
+an 8-character input string, while the improved version takes 0.17 µs, which is 6.5
+times faster. Not only is the performance improved, but arguably, so is clarity.
+Making a static final field for the otherwise invisible Pattern instance allows us
+to give it a name, which is far more readable than the regular expression itself.
+If the class containing the improved version of the isRomanNumeral method is
+initialized but the method is never invoked, the field ROMAN will be initialized
+needlessly. It would be possible to eliminate the initialization by lazily initializing
+the field (Item 83) the first time the isRomanNumeral method is invoked, but this
+is not recommended. As is often the case with lazy initialization, it would complicate the implementation with no measurable performance improvement (Item 67).
+When an object is immutable, it is obvious it can be reused safely, but there
+are other situations where it is far less obvious, even counterintuitive. Consider the
+case of adapters [Gamma95], also known as views. An adapter is an object that
+delegates to a backing object, providing an alternative interface. Because an
+adapter has no state beyond that of its backing object, there’s no need to create
+more than one instance of a given adapter to a given object.24 CHAPTER 2 CREATING AND DESTROYING OBJECTS
+For example, the keySet method of the Map interface returns a Set view of the
+Map object, consisting of all the keys in the map. Naively, it would seem that every
+call to keySet would have to create a new Set instance, but every call to keySet
+on a given Map object may return the same Set instance. Although the returned Set
+instance is typically mutable, all of the returned objects are functionally identical:
+when one of the returned objects changes, so do all the others, because they’re all
+backed by the same Map instance. While it is largely harmless to create multiple
+instances of the keySet view object, it is unnecessary and has no benefits.
+Another way to create unnecessary objects is autoboxing, which allows the
+programmer to mix primitive and boxed primitive types, boxing and unboxing
+automatically as needed. Autoboxing blurs but does not erase the distinction
+between primitive and boxed primitive types. There are subtle semantic distinctions and not-so-subtle performance differences (Item 61). Consider the following
+method, which calculates the sum of all the positive int values. To do this, the
+program has to use long arithmetic because an int is not big enough to hold the
+sum of all the positive int values:
+// Hideously slow! Can you spot the object creation?
+private static long sum() {
+Long sum = 0L;
+for (long i = 0; i <= Integer.MAX_VALUE; i++)
+sum += i;
+return sum;
 }
-}14 CHAPTER 2 CREATING AND DESTROYING OBJECTS
-The NutritionFacts class is immutable, and all parameter default values are
-in one place. The builder’s setter methods return the builder itself so that invocations can be chained, resulting in a
-fluent API. Here’s how the client code looks:
-NutritionFacts cocaCola = new NutritionFacts.Builder(240, 8)
-.calories(100).sodium(35).carbohydrate(27).build();
-This client code is easy to write and, more importantly, easy to read. The Builder
-pattern simulates named optional parameters as found in Python and Scala.
-Validity checks were omitted for brevity. To detect invalid parameters as soon
-as possible, check parameter validity in the builder’s constructor and methods.
-Check invariants involving multiple parameters in the constructor invoked by the
-build method. To ensure these invariants against attack, do the checks on object
-fields after copying parameters from the builder (Item 50). If a check fails, throw
-an IllegalArgumentException (Item 72) whose detail message indicates which
-parameters are invalid (Item 75).
-The Builder pattern is well suited to class hierarchies. Use a parallel hierarchy of builders, each nested in the corresponding class. Abstract classes have
-abstract builders; concrete classes have concrete builders. For example, consider
-an abstract class at the root of a hierarchy representing various kinds of pizza:
-// Builder pattern for class hierarchies
-public abstract class Pizza {
-public enum Topping { HAM, MUSHROOM, ONION, PEPPER, SAUSAGE }
-final Set<Topping> toppings;
-abstract static class Builder<T extends Builder<T>> {
-EnumSet<Topping> toppings = EnumSet.noneOf(Topping.class);
-public T addTopping(Topping topping) {
-toppings.add(Objects.requireNonNull(topping));
-return self();
-}
-abstract Pizza build();
-// Subclasses must override this method to return "this"
-protected abstract T self();
-}
-Pizza(Builder<?> builder) {
-toppings = builder.toppings.clone(); // See Item 50
-}
-}
-Note that Pizza.Builder is a generic type with a recursive type parameter
-(Item 30). This, along with the abstract self method, allows method chaining to
-work properly in subclasses, without the need for casts. This workaround for the
-fact that Java lacks a self type is known as the simulated self-type idiom.
-www.ebook3000.comITEM 2: CONSIDER A BUILDER WHEN FACED WITH MANY CONSTRUCTOR PARAMETERS 15
-Here are two concrete subclasses of Pizza, one of which represents a standard
-New-York-style pizza, the other a calzone. The former has a required size parameter, while the latter lets you specify whether sauce should be inside
-or out:
-public class NyPizza extends Pizza {
-public enum Size { SMALL, MEDIUM, LARGE }
-private final Size size;
-public static class Builder extends Pizza.Builder<Builder> {
-private final Size size;
-public Builder(Size size) {
-this.size = Objects.requireNonNull(size);
-}
-@Override public NyPizza build() {
-return new NyPizza(this);
-}
-@Override protected Builder self() { return this; }
-}
-private NyPizza(Builder builder) {
-super(builder);
-size = builder.size;
-}
-}
-public class Calzone extends Pizza {
-private final boolean sauceInside;
-public static class Builder extends Pizza.Builder<Builder> {
-private boolean sauceInside = false; // Default
-public Builder sauceInside() {
-sauceInside = true;
-return this;
-}
-@Override public Calzone build() {
-return new Calzone(this);
-}
-@Override protected Builder self() { return this; }
-}
-private Calzone(Builder builder) {
-super(builder);
-sauceInside = builder.sauceInside;
-}
-}16 CHAPTER 2 CREATING AND DESTROYING OBJECTS
-Note that the build method in each subclass’s builder is declared to return the
-correct subclass: the build method of NyPizza.Builder returns NyPizza, while
-the one in Calzone.Builder returns Calzone. This technique, wherein a subclass
-method is declared to return a subtype of the return type declared in the superclass, is known as covariant return typing.
-It allows clients to use these builders
-without the need for casting.
-The client code for these “hierarchical builders” is essentially identical to the
-code for the simple NutritionFacts builder. The example client code shown next
-assumes static imports on enum constants for brevity:
-NyPizza pizza = new NyPizza.Builder(SMALL)
-.addTopping(SAUSAGE).addTopping(ONION).build();
-Calzone calzone = new Calzone.Builder()
-.addTopping(HAM).sauceInside().build();
-A minor advantage of builders over constructors is that builders can have multiple varargs parameters because each parameter is specified in its own method.
-Alternatively, builders can aggregate the parameters passed into multiple calls to a
-method into a single field, as demonstrated in the addTopping method earlier.
-The Builder pattern is quite flexible. A single builder can be used repeatedly
-to build multiple objects. The parameters of the builder can be tweaked between
-invocations of the build method to vary the objects that are created. A builder can
-fill in some fields automatically upon object creation, such as a serial number that
-increases each time an object is created.
-
-The Builder pattern has disadvantages as well. In order to create an object, you
-must first create its builder. While the cost of creating this builder is unlikely to be
-noticeable in practice, it could be a problem in performance-critical situations.
-Also, the Builder pattern is more verbose than the telescoping constructor pattern,
-so it should be used only if there are enough parameters to make it worthwhile, say
-four or more. But keep in mind that you may want to add more parameters in the
-future. But if you start out with constructors or static factories and switch to a
-builder when the class evolves to the point where the number of parameters gets
-out of hand, the obsolete constructors or static factories will stick out like a sore
-thumb. Therefore, it’s often better to start with a builder in the first place.
-In summary, the Builder pattern is a good choice when designing classes
-whose constructors or static factories would have more than a handful of
-parameters, especially if many of the parameters are optional or of identical type.
-Client code is much easier to read and write with builders than with telescoping
-constructors, and builders are much safer than JavaBeans.
+This program gets the right answer, but it is much slower than it should be,
+due to a one-character typographical error. The variable sum is declared as a Long
+instead of a long, which means that the program constructs about 231 unnecessary
+Long instances (roughly one for each time the long i is added to the Long sum).
+Changing the declaration of sum from Long to long reduces the runtime from 6.3
+seconds to 0.59 seconds on my machine. The lesson is clear: prefer primitives to
+boxed primitives, and watch out for unintentional autoboxing.
+This item should not be misconstrued to imply that object creation is expensive and should be avoided. On the contrary, the creation and reclamation of small
+objects whose constructors do little explicit work is cheap, especially on modern
+JVM implementations. Creating additional objects to enhance the clarity, simplicity, or power of a program is generally a good thing.
+Conversely, avoiding object creation by maintaining your own object pool is a
+bad idea unless the objects in the pool are extremely heavyweight. The classic
+www.ebook3000.comITEM 6: AVOID CREATING UNNECESSARY OBJECTS 25
+example of an object that does justify an object pool is a database connection. The
+cost of establishing the connection is sufficiently high that it makes sense to reuse
+these objects. Generally speaking, however, maintaining your own object pools
+clutters your code, increases memory footprint, and harms performance. Modern
+JVM implementations have highly optimized garbage collectors that easily outperform such object pools on lightweight objects.
+The counterpoint to this item is Item 50 on defensive copying. The present
+item says, “Don’t create a new object when you should reuse an existing one,”
+while Item 50 says, “Don’t reuse an existing object when you should create a new
+one.” Note that the penalty for reusing an object when defensive copying is called
+for is far greater than the penalty for needlessly creating a duplicate object. Failing
+to make defensive copies where required can lead to insidious bugs and security
+holes; creating objects unnecessarily merely affects style and performance.
