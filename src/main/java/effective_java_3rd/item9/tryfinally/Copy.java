@@ -1,8 +1,6 @@
 package effective_java_3rd.item9.tryfinally;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 public class Copy {
     private static final int BUFFER_SIZE = 8 * 1024;
@@ -25,7 +23,10 @@ public class Copy {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        String src = args[0];
+        String dst = args[1];
+        copy(src, dst);
 
     }
 }
