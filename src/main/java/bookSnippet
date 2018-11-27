@@ -244,7 +244,8 @@ with the URLs. Translating a host name to an IP address can require network
 access, and it isn’t guaranteed to yield the same results over time. This can cause
 the URL equals method to violate the equals contract and has caused problems in
 practice. The behavior of URL’s equals method was a big mistake and should not
-be emulated. Unfortunately, it cannot be changed due to compatibility requirements. To avoid this sort of problem, equals methods should perform only deterministic computations on memory-resident objects.
+be emulated. Unfortunately, it cannot be changed due to compatibility requirements. To avoid this sort of problem,
+equals methods should perform only deterministic computations on memory-resident objects.
 Non-nullity—The final requirement lacks an official name, so I have taken
 the liberty of calling it “non-nullity.” It says that all objects must be unequal to
 null. While it is hard to imagine accidentally returning true in response to the
