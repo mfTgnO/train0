@@ -1,3 +1,4 @@
+/*
 package effective_java_3rd.ch2.item8;
 
 // Well-behaved client of resource with cleaner safety-net (Page 33)
@@ -10,3 +11,4 @@ public class Adult {
         }
     }
 }
+*/

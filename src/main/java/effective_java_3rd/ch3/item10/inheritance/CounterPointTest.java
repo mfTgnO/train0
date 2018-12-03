@@ -1,3 +1,4 @@
+/*
 package effective_java_3rd.ch3.item10.inheritance;
 
 import effective_java_3rd.ch3.item10.Point;
@@ -28,3 +29,4 @@ public class CounterPointTest {
         System.out.println(onUnitCircle(p2));
     }
 }
+*/

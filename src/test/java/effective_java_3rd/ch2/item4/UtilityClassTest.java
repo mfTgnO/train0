@@ -8,4 +8,18 @@ public class UtilityClassTest {
 //        UtilityClass utilityClass = new UtilityClass();
     }
 
+    @Test
+    public void test_i() {
+        int i = 2018;
+        int result = Integer.hashCode(i);
+        System.out.println("result:" + result);
+    }
+
+    @Test
+    public void test_ii(){
+        double i = 20.18;
+        int result = Double.hashCode(i);
+        System.out.println("result:" + result);
+    }
+
 }
