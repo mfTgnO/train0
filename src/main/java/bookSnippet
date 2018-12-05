@@ -162,6 +162,8 @@ numbers according to their area codes. Note that the lambda explicitly specifies
 the type of its input parameter (PhoneNumber pn). It turns out that in this situation,
 Java’s type inference isn’t powerful enough to figure the type out for itself, so
 we’re forced to help it in order to make the program compile.
+
+
 If two phone numbers have the same area code, we need to further refine the
 comparison, and that’s exactly what the second comparator construction method,
 thenComparingInt, does. It is an instance method on Comparator that takes an

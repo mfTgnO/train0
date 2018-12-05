@@ -7,7 +7,8 @@ import java.util.TreeSet;
 public class HashSetDemo {
     public static void main(String[] args) {
         test1();
-        test2();
+//        test2();
+//        test3();
     }
 
     private static void test1() {
@@ -30,5 +31,11 @@ public class HashSetDemo {
         set.add(bd2);
 
         System.out.println("TreeSet size:" + set.size());// TreeSet size:1
+    }
+
+    private static void test3() {
+        boolean flag;
+        flag = 0 == 1;
+        System.out.println(flag);
     }
 }
