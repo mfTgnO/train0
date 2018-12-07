@@ -1,223 +1,157 @@
-Item 14: Consider implementing Comparable
-Unlike the other methods discussed in this chapter, the compareTo method is not
-declared in Object. Rather, it is the sole method in the Comparable interface. It is
-similar in character to Object’s equals method, except that it permits order comparisons in addition to simple equality comparisons,
-and it is generic. By implementing Comparable, a class indicates that its instances have a natural ordering.
-Sorting an array of objects that implement Comparable is as simple as this:
-Arrays.sort(a);
-It is similarly easy to search, compute extreme values, and maintain automatically sorted collections of Comparable objects.
-For example, the following program, which relies on the fact that String implements Comparable, prints an
-alphabetized list of its command-line arguments with duplicates eliminated:
-public class WordList {
-public static void main(String[] args) {
-Set<String> s = new TreeSet<>();
-Collections.addAll(s, args);
-System.out.println(s);
-}
-}
-By implementing Comparable, you allow your class to interoperate with all of
-the many generic algorithms and collection implementations that depend on this
-interface. You gain a tremendous amount of power for a small amount of effort.
-Virtually all of the value classes in the Java platform libraries, as well as all enum
-types (Item 34), implement Comparable. If you are writing a value class with an
-obvious natural ordering, such as alphabetical order, numerical order, or chronological order, you should implement the Comparable interface:
-public interface Comparable<T> {
-int compareTo(T t);
-}
-The general contract of the compareTo method is similar to that of equals:
-Compares this object with the specified object for order. Returns a negative
-integer, zero, or a positive integer as this object is less than, equal to, or greater
-than the specified object. Throws ClassCastException if the specified
-object’s type prevents it from being compared to this object.
-www.ebook3000.comITEM 14: CONSIDER IMPLEMENTING COMPARABLE 67
-In the following description, the notation sgn(expression) designates the mathematical signum function, which is defined to return -1, 0, or 1, according to
-whether the value of expression is negative, zero, or positive.
-• The implementor must ensure that sgn(x.compareTo(y)) == -sgn(y.
-compareTo(x)) for all x and y. (This implies that x.compareTo(y) must
-throw an exception if and only if y.compareTo(x) throws an exception.)
-• The implementor must also ensure that the relation is transitive: (x.
-compareTo(y) > 0 && y.compareTo(z) > 0) implies x.compareTo(z) > 0.
-• Finally, the implementor must ensure that x.compareTo(y) == 0 implies that
-sgn(x.compareTo(z)) == sgn(y.compareTo(z)), for all z.
-• It is strongly recommended, but not required, that (x.compareTo(y) == 0)
-== (x.equals(y)). Generally speaking, any class that implements the
-Comparable interface and violates this condition should clearly indicate this
-fact. The recommended language is “Note: This class has a natural ordering
-that is inconsistent with equals.”
-Don’t be put off by the mathematical nature of this contract. Like the equals
-contract (Item 10), this contract isn’t as complicated as it looks. Unlike the equals
-method, which imposes a global equivalence relation on all objects, compareTo
-doesn’t have to work across objects of different types: when confronted with
-objects of different types, compareTo is permitted to throw ClassCastException.
-Usually, that is exactly what it does. The contract does permit intertype comparisons, which are typically defined in an interface implemented by the objects being
-compared.
-Just as a class that violates the hashCode contract can break other classes that
-depend on hashing, a class that violates the compareTo contract can break other
-classes that depend on comparison. Classes that depend on comparison include
-the sorted collections TreeSet and TreeMap and the utility classes Collections
-and Arrays, which contain searching and sorting algorithms.
-Let’s go over the provisions of the compareTo contract. The first provision
-says that if you reverse the direction of a comparison between two object references, the expected thing happens: if the first object is less than the second, then
-the second must be greater than the first; if the first object is equal to the second,
-then the second must be equal to the first; and if the first object is greater than the
-second, then the second must be less than the first. The second provision says that
-if one object is greater than a second and the second is greater than a third, then
-the first must be greater than the third. The final provision says that all objects that
-compare as equal must yield the same results when compared to any other object.68 CHAPTER 3 METHODS COMMON TO ALL OBJECTS
-One consequence of these three provisions is that the equality test imposed by
-a compareTo method must obey the same restrictions imposed by the equals contract: reflexivity, symmetry, and transitivity. Therefore, the same caveat applies:
-there is no way to extend an instantiable class with a new value component while
-preserving the compareTo contract, unless you are willing to forgo the benefits of
-object-oriented abstraction (Item 10). The same workaround applies, too. If you
-want to add a value component to a class that implements Comparable, don’t
-extend it; write an unrelated class containing an instance of the first class. Then
-provide a “view” method that returns the contained instance. This frees you to
-implement whatever compareTo method you like on the containing class, while
-allowing its client to view an instance of the containing class as an instance of the
-contained class when needed.
-The final paragraph of the compareTo contract, which is a strong suggestion
-rather than a true requirement, simply states that the equality test imposed by the
-compareTo method should generally return the same results as the equals
-method. If this provision is obeyed, the ordering imposed by the compareTo
-method is said to be consistent with equals. If it’s violated, the ordering is said to
-be inconsistent with equals. A class whose compareTo method imposes an order
-that is inconsistent with equals will still work, but sorted collections containing
-elements of the class may not obey the general contract of the appropriate collection interfaces (Collection, Set, or Map). This is because the general contracts
-for these interfaces are defined in terms of the equals method, but sorted collections use the equality test imposed by compareTo in place of equals. It is not a
-catastrophe if this happens, but it’s something to be aware of.
-For example, consider the BigDecimal class, whose compareTo method is
-inconsistent with equals. If you create an empty HashSet instance and then add
-new BigDecimal("1.0") and new BigDecimal("1.00"), the set will contain two
-elements because the two BigDecimal instances added to the set are unequal
-when compared using the equals method. If, however, you perform the same
-procedure using a TreeSet instead of a HashSet, the set will contain only one
-element because the two BigDecimal instances are equal when compared using
-the compareTo method. (See the BigDecimal documentation for details.)
-Writing a compareTo method is similar to writing an equals method, but
-there are a few key differences. Because the Comparable interface is parameterized, the compareTo method is statically typed, so you don’t need to type check or
-cast its argument. If the argument is of the wrong type, the invocation won’t even
-compile. If the argument is null, the invocation should throw a NullPointerException, and it will, as soon as the method attempts to access its members.
-www.ebook3000.comITEM 14: CONSIDER IMPLEMENTING COMPARABLE 69
-In a compareTo method, fields are compared for order rather than equality. To
-compare object reference fields, invoke the compareTo method recursively. If a
-field does not implement Comparable or you need a nonstandard ordering, use a
-Comparator instead. You can write your own comparator or use an existing one,
-as in this compareTo method for CaseInsensitiveString in Item 10:
-// Single-field Comparable with object reference field
-public final class CaseInsensitiveString
-implements Comparable<CaseInsensitiveString> {
-public int compareTo(CaseInsensitiveString cis) {
-return String.CASE_INSENSITIVE_ORDER.compare(s, cis.s);
-}
-... // Remainder omitted
-}
-Note that CaseInsensitiveString implements Comparable<CaseInsensitiveString>. This means that a CaseInsensitiveString reference can be compared only to another CaseInsensitiveString reference. This is the normal
-pattern to follow when declaring a class to implement Comparable.
-Prior editions of this book recommended that compareTo methods compare
-integral primitive fields using the relational operators < and >, and floating point
-primitive fields using the static methods Double.compare and Float.compare. In
-Java 7, static compare methods were added to all of Java’s boxed primitive
-classes. Use of the relational operators < and > in compareTo methods is
-verbose and error-prone and no longer recommended.
-If a class has multiple significant fields, the order in which you compare them
-is critical. Start with the most significant field and work your way down. If a
-comparison results in anything other than zero (which represents equality), you’re
-done; just return the result. If the most significant field is equal, compare the nextmost-significant field, and so on, until you find an unequal field or compare the
-least significant field. Here is a compareTo method for the PhoneNumber class in
-Item 11 demonstrating this technique:
-// Multiple-field Comparable with primitive fields
-public int compareTo(PhoneNumber pn) {
-int result = Short.compare(areaCode, pn.areaCode);
-if (result == 0) {
-result = Short.compare(prefix, pn.prefix);
-if (result == 0)
-result = Short.compare(lineNum, pn.lineNum);
-}
-return result;
-}70 CHAPTER 3 METHODS COMMON TO ALL OBJECTS
-In Java 8, the Comparator interface was outfitted with a set of comparator
-construction methods, which enable fluent construction of comparators. These
-comparators can then be used to implement a compareTo method, as required by
-the Comparable interface. Many programmers prefer the conciseness of this
-approach, though it does come at a modest performance cost: sorting arrays of
-PhoneNumber instances is about 10% slower on my machine. When using this
-approach, consider using Java’s static import facility so you can refer to static
-comparator construction methods by their simple names for clarity and brevity.
-Here’s how the compareTo method for PhoneNumber looks using this approach:
-// Comparable with comparator construction methods
-private static final Comparator<PhoneNumber> COMPARATOR =
-comparingInt((PhoneNumber pn) -> pn.areaCode)
-.thenComparingInt(pn -> pn.prefix)
-.thenComparingInt(pn -> pn.lineNum);
-public int compareTo(PhoneNumber pn) {
-return COMPARATOR.compare(this, pn);
-}
-This implementation builds a comparator at class initialization time, using
-two comparator construction methods. The first is comparingInt. It is a static
-method that takes a key extractor function that maps an object reference to a key of
-type int and returns a comparator that orders instances according to that key. In
-the previous example, comparingInt takes a lambda () that extracts the area code
-from a PhoneNumber and returns a Comparator<PhoneNumber> that orders phone
-numbers according to their area codes. Note that the lambda explicitly specifies
-the type of its input parameter (PhoneNumber pn). It turns out that in this situation,
-Java’s type inference isn’t powerful enough to figure the type out for itself, so
-we’re forced to help it in order to make the program compile.
+CLASSES and interfaces lie at the heart of the Java programming language.
+They are its basic units of abstraction. The language provides many powerful
+elements that you can use to design classes and interfaces. This chapter contains
+guidelines to help you make the best use of these elements so that your classes and
+interfaces are usable, robust, and flexible.
+Item 15: Minimize the accessibility of classes and members
+The single most important factor that distinguishes a well-designed component
+from a poorly designed one is the degree to which the component hides its internal
+data and other implementation details from other components. A well-designed
+component hides all its implementation details, cleanly separating its API from its
+implementation. Components then communicate only through their APIs and are
+oblivious to each others’ inner workings. This concept, known as information
+hiding or encapsulation, is a fundamental tenet of software design [Parnas72].
+Information hiding is important for many reasons, most of which stem from
+the fact that it decouples the components that comprise a system, allowing them to
+be developed, tested, optimized, used, understood, and modified in isolation. This
+speeds up system development because components can be developed in parallel.
+It eases the burden of maintenance because components can be understood more
+quickly and debugged or replaced with little fear of harming other components.
+While information hiding does not, in and of itself, cause good performance, it
+enables effective performance tuning: once a system is complete and profiling has
+determined which components are causing performance problems (Item 67), those
+components can be optimized without affecting the correctness of others.
+Information hiding increases software reuse because components that aren’t tightly coupled often prove useful in other contexts besides the ones for which they were74 CHAPTER 4 CLASSES AND INTERFACES
+developed. Finally, information hiding decreases the risk in building large systems
+because individual components may prove successful even if the system does not.
+Java has many facilities to aid in information hiding. The access control mechanism [JLS, 6.6] specifies the accessibility of classes, interfaces, and members. The
+accessibility of an entity is determined by the location of its declaration and by
+which, if any, of the access modifiers (private, protected, and public) is present
+on the declaration. Proper use of these modifiers is essential to information hiding.
+The rule of thumb is simple: make each class or member as inaccessible as
+possible. In other words, use the lowest possible access level consistent with the
+proper functioning of the software that you are writing.
 
 
-If two phone numbers have the same area code, we need to further refine the
-comparison, and that’s exactly what the second comparator construction method,
-thenComparingInt, does. It is an instance method on Comparator that takes an
-int key extractor function, and returns a comparator that first applies the original
-comparator and then uses the extracted key to break ties. You can stack up as
-many calls to thenComparingInt as you like, resulting in a lexicographic
-ordering. In the example above, we stack up two calls to thenComparingInt,
-resulting in an ordering whose secondary key is the prefix and whose tertiary key
-is the line number. Note that we did not have to specify the parameter type of the
-key extractor function passed to either of the calls to thenComparingInt: Java’s
-type inference was smart enough to figure this one out for itself.
-www.ebook3000.comITEM 14: CONSIDER IMPLEMENTING COMPARABLE 71
-The Comparator class has a full complement of construction methods. There
-are analogues to comparingInt and thenComparingInt for the primitive types
-long and double. The int versions can also be used for narrower integral types,
-such as short, as in our PhoneNumber example. The double versions can also be
-used for float. This provides coverage of all of Java’s numerical primitive types.
-There are also comparator construction methods for object reference types.
-The static method, named comparing, has two overloadings. One takes a key
-extractor and uses the keys’ natural order. The second takes both a key extractor
-and a comparator to be used on the extracted keys. There are three overloadings of
-the instance method, which is named thenComparing. One overloading takes only
-a comparator and uses it to provide a secondary order. A second overloading takes
-only a key extractor and uses the key’s natural order as a secondary order. The
-final overloading takes both a key extractor and a comparator to be used on the
-extracted keys.
-Occasionally you may see compareTo or compare methods that rely on the fact
-that the difference between two values is negative if the first value is less than the
-second, zero if the two values are equal, and positive if the first value is greater. Here
-is an example:
-// BROKEN difference-based comparator - violates transitivity!
-static Comparator<Object> hashCodeOrder = new Comparator<>() {
-public int compare(Object o1, Object o2) {
-return o1.hashCode() - o2.hashCode();
+For top-level (non-nested) classes and interfaces, there are only two possible
+access levels: package-private and public. If you declare a top-level class or
+interface with the public modifier, it will be public; otherwise, it will be packageprivate. If a top-level class or interface can be made package-private, it should be.
+By making it package-private, you make it part of the implementation rather than
+the exported API, and you can modify it, replace it, or eliminate it in a subsequent
+release without fear of harming existing clients. If you make it public, you are
+obligated to support it forever to maintain compatibility.
+If a package-private top-level class or interface is used by only one class,
+consider making the top-level class a private static nested class of the sole class
+that uses it (Item 24). This reduces its accessibility from all the classes in its
+package to the one class that uses it. But it is far more important to reduce the
+accessibility of a gratuitously public class than of a package-private top-level
+class: the public class is part of the package’s API, while the package-private toplevel class is already part of its implementation.
+For members (fields, methods, nested classes, and nested interfaces), there are
+four possible access levels, listed here in order of increasing accessibility:
+• private—The member is accessible only from the top-level class where it is
+declared.
+• package-private—The member is accessible from any class in the package
+where it is declared. Technically known as default access, this is the access
+level you get if no access modifier is specified (except for interface members,
+which are public by default).
+• protected—The member is accessible from subclasses of the class where it is
+declared (subject to a few restrictions [JLS, 6.6.2]) and from any class in the
+package where it is declared.
+• public—The member is accessible from anywhere.
+www.ebook3000.comITEM 15: MINIMIZE THE ACCESSIBILITY OF CLASSES AND MEMBERS 75
+After carefully designing your class’s public API, your reflex should be to
+make all other members private. Only if another class in the same package really
+needs to access a member should you remove the private modifier, making the
+member package-private. If you find yourself doing this often, you should reexamine the design of your system to see if another decomposition might yield
+classes that are better decoupled from one another. That said, both private and
+package-private members are part of a class’s implementation and do not normally
+impact its exported API. These fields can, however, “leak” into the exported API
+if the class implements Serializable (Items 86 and 87).
+For members of public classes, a huge increase in accessibility occurs when
+the access level goes from package-private to protected. A protected member is
+part of the class’s exported API and must be supported forever. Also, a protected
+member of an exported class represents a public commitment to an implementation detail (Item 19). The need for protected members should be relatively rare.
+There is a key rule that restricts your ability to reduce the accessibility of methods. If a method overrides a superclass method, it cannot have a more restrictive
+access level in the subclass than in the superclass [JLS, 8.4.8.3]. This is necessary
+to ensure that an instance of the subclass is usable anywhere that an instance of the
+superclass is usable (the Liskov substitution principle, see Item 15). If you violate
+this rule, the compiler will generate an error message when you try to compile the
+subclass. A special case of this rule is that if a class implements an interface, all of
+the class methods that are in the interface must be declared public in the class.
+To facilitate testing your code, you may be tempted to make a class, interface,
+or member more accessible than otherwise necessary. This is fine up to a point. It
+is acceptable to make a private member of a public class package-private in order
+to test it, but it is not acceptable to raise the accessibility any higher. In other
+words, it is not acceptable to make a class, interface, or member a part of a package’s exported API to facilitate testing. Luckily, it isn’t necessary either because
+tests can be made to run as part of the package being tested, thus gaining access to
+its package-private elements.
+Instance fields of public classes should rarely be public (Item 16). If an
+instance field is nonfinal or is a reference to a mutable object, then by making it
+public, you give up the ability to limit the values that can be stored in the field.
+This means you give up the ability to enforce invariants involving the field. Also,
+you give up the ability to take any action when the field is modified, so classes
+with public mutable fields are not generally thread-safe. Even if a field is final
+and refers to an immutable object, by making it public you give up the flexibility
+to switch to a new internal data representation in which the field does not exist.76 CHAPTER 4 CLASSES AND INTERFACES
+The same advice applies to static fields, with one exception. You can expose
+constants via public static final fields, assuming the constants form an integral part
+of the abstraction provided by the class. By convention, such fields have names
+consisting of capital letters, with words separated by underscores (Item 68). It is
+critical that these fields contain either primitive values or references to immutable
+objects (Item 17). a field containing a reference to a mutable object has all the
+disadvantages of a nonfinal field. While the reference cannot be modified, the
+referenced object can be modified—with disastrous results.
+Note that a nonzero-length array is always mutable, so it is wrong for a class
+to have a public static final array field, or an accessor that returns such a
+field. If a class has such a field or accessor, clients will be able to modify the contents of the array. This is a frequent source of security holes:
+// Potential security hole!
+public static final Thing[] VALUES = { ... };
+Beware of the fact that some IDEs generate accessors that return references to private array fields, resulting in exactly this problem. There are two ways to fix the
+problem. You can make the public array private and add a public immutable list:
+private static final Thing[] PRIVATE_VALUES = { ... };
+public static final List<Thing> VALUES =
+Collections.unmodifiableList(Arrays.asList(PRIVATE_VALUES));
+Alternatively, you can make the array private and add a public method that
+returns a copy of a private array:
+private static final Thing[] PRIVATE_VALUES = { ... };
+public static final Thing[] values() {
+return PRIVATE_VALUES.clone();
 }
-};
-Do not use this technique. It is fraught with danger from integer overflow and
-IEEE 754 floating point arithmetic artifacts [JLS 15.20.1, 15.21.1]. Furthermore,
-the resulting methods are unlikely to be significantly faster than those written
-using the techniques described in this item. Use either a static compare method:
-// Comparator based on static compare method
-static Comparator<Object> hashCodeOrder = new Comparator<>() {
-public int compare(Object o1, Object o2) {
-return Integer.compare(o1.hashCode(), o2.hashCode());
-}
-};
-or a comparator construction method:
-// Comparator based on Comparator construction method
-static Comparator<Object> hashCodeOrder =
-Comparator.comparingInt(o -> o.hashCode());72 CHAPTER 3 METHODS COMMON TO ALL OBJECTS
-In summary, whenever you implement a value class that has a sensible ordering, you should have the class implement the Comparable interface so that its
-instances can be easily sorted, searched, and used in comparison-based collections. When comparing field values in the implementations of the compareTo
-methods, avoid the use of the < and > operators. Instead, use the static compare
-methods in the boxed primitive classes or the comparator construction methods in
-the Comparator interface.
-
-https://proprogramming.org/program-to-implement-circular-queue-in-java/
+To choose between these alternatives, think about what the client is likely to do
+with the result. Which return type will be more convenient? Which will give better
+performance?
+As of Java 9, there are two additional, implicit access levels introduced as part
+of the module system. A module is a grouping of packages, like a package is a
+grouping of classes. A module may explicitly export some of its packages via
+export declarations in its module declaration (which is by convention contained in
+a source file named module-info.java). Public and protected members of
+unexported packages in a module are inaccessible outside the module; within the
+www.ebook3000.comITEM 15: MINIMIZE THE ACCESSIBILITY OF CLASSES AND MEMBERS 77
+module, accessibility is unaffected by export declarations. Using the module
+system allows you to share classes among packages within a module without
+making them visible to the entire world. Public and protected members of public
+classes in unexported packages give rise to the two implicit access levels, which
+are intramodular analogues of the normal public and protected levels. The need for
+this kind of sharing is relatively rare and can often be eliminated by rearranging
+the classes within your packages.
+Unlike the four main access levels, the two module-based levels are largely
+advisory. If you place a module’s JAR file on your application’s class path instead
+of its module path, the packages in the module revert to their non-modular behavior: all of the public and protected members of the packages’ public classes have
+their normal accessibility, regardless of whether the packages are exported by the
+module [Reinhold, 1.2]. The one place where the newly introduced access levels
+are strictly enforced is the JDK itself: the unexported packages in the Java libraries
+are truly inaccessible outside of their modules.
+Not only is the access protection afforded by modules of limited utility to the
+typical Java programmer, and largely advisory in nature; in order to take
+advantage of it, you must group your packages into modules, make all of their
+dependencies explicit in module declarations, rearrange your source tree, and take
+special actions to accommodate any access to non-modularized packages from
+within your modules [Reinhold, 3]. It is too early to say whether modules will
+achieve widespread use outside of the JDK itself. In the meantime, it seems best to
+avoid them unless you have a compelling need.
+To summarize, you should reduce accessibility of program elements as much
+as possible (within reason). After carefully designing a minimal public API, you
+should prevent any stray classes, interfaces, or members from becoming part of
+the API. With the exception of public static final fields, which serve as constants,
+public classes should have no public fields. Ensure that objects referenced by
+public static final fields are immutable.
