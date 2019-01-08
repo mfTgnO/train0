@@ -3,7 +3,7 @@ package skill.common;
 import java.util.ArrayList;
 import java.util.List;
 
-public class superdemo {
+public class Superdemo {
     public static void main(String[] args) {
 
     }
