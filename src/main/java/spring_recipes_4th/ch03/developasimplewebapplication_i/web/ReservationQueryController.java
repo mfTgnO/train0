@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import spring_recipes_4th.ch03.developasimplewebapplication_i.domain.Reservation;
 import spring_recipes_4th.ch03.developasimplewebapplication_i.service.ReservationService;
 
-import java.util.Collections;
+import java.util.collectionsdemo;
 import java.util.List;
 
 @Controller
@@ -36,7 +36,7 @@ public class ReservationQueryController {
     @PostMapping
     public String submitForm(@RequestParam("courtName") String courtName, Model model) {
         // Create reservation list
-        List<Reservation> reservations = Collections.emptyList();
+        List<Reservation> reservations = collectionsdemo.emptyList();
         // Make a query if parameter is not null
         if (courtName != null) {
             reservations = reservationService.query(courtName);
