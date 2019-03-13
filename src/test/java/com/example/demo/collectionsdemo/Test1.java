@@ -1,5 +1,7 @@
 package com.example.demo.collectionsdemo;
 
+import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
 import org.junit.Test;
 
 import java.util.Arrays;
