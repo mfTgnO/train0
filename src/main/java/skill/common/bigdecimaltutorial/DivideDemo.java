@@ -8,8 +8,8 @@ import java.math.RoundingMode;
 quotient cannot be represented (because it has a non-terminating decimal expansion) an ArithmeticException is thrown". */
 public class DivideDemo {
     public static void main(String[] args) {
-//        test1();
-        test2();
+        test1();
+//        test2();
     }
 
     public static void test1() {
@@ -18,7 +18,7 @@ public class DivideDemo {
         System.out.println("Divide: " + bdecRes);
         //Using MathContext
 
-        MathContext mc = new MathContext(2, RoundingMode.FLOOR);
+        MathContext mc = new MathContext(4, RoundingMode.FLOOR);
         BigDecimal bdecMath = bdec.divide(new BigDecimal("20"), mc);
         System.out.println("Divide using MathContext: " + bdecMath);
     }
