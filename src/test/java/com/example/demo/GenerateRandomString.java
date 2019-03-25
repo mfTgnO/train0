@@ -4,9 +4,18 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 
 import java.nio.charset.Charset;
+import java.text.BreakIterator;
 import java.util.Random;
 
 public class GenerateRandomString {
+    @Test
+    public void test1() {
+        int num = 1;
+        if (num == 1) {
+
+        }
+    }
+
     @Test
     public void givenUsingPlainJava_whenGeneratingRandomStringUnbounded_thenCorrect() {
         byte[] arrays = new byte[7];// length is bounded by 7

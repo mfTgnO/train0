@@ -1,6 +1,7 @@
 package skill.common.chinesecharacterssize;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 
 /*
@@ -12,7 +13,11 @@ public class Demo1 {
 //        test1();
 //        test2();
 //        test3();
-        test4();
+//        test4();
+        Method[] methods = Demo1.class.getMethods();
+        for (Method method : methods) {
+            System.out.println("method = " + method.getName());
+        }
     }
 
     public static void test1() {
