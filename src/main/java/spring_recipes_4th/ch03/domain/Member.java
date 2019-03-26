@@ -37,4 +37,17 @@ public class Member {
     public void setEmail(String email) {
         this.email = email;
     }
+
+    public static void compare() {
+        Member a = new Member("a", "123", "123@mail.com");
+        Member b = new Member("b", "123", "123@mail.com");
+
+        if (!a.getName().equals(b.getName()) && a.getPhone().equals(b.getPhone())) {
+            System.out.println("equal");
+        }
+    }
+
+    public static void main(String[] args) {
+        compare();
+    }
 }
