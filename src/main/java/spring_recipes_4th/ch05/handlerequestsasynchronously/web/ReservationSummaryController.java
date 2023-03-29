@@ -30,11 +30,11 @@ public class ReservationSummaryController {
 
     @ExceptionHandler
     public void handle(ServletRequestBindingException ex, @RequestParam(required = true, value = "date") String date) {
-        if (ex.getRootCause() instanceof ParseException) {
+        /*if (ex.getRootCause() instanceof ParseException) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             ex.getRootCause().printStackTrace(pw);
             throw new ReservationWebException("Invalid date format for reservation summary", new Date(), sw.toString());
-        }
+        }*/
     }
 }
